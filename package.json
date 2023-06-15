@@ -1,0 +1,19 @@
+{
+  "name": "rbs-pos-df-taxes-microservices",
+  "version": "1.0.0",
+  "description": "This microservice holds record creation for tax related records",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RoyalAholdDelhaize/rbs-pos-df-taxes-microservices.git"
+  },
+  "author": "Valeria Molina Recinos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RoyalAholdDelhaize/rbs-pos-df-taxes-microservices/issues"
+  },
+  "homepage": "https://github.com/RoyalAholdDelhaize/rbs-pos-df-taxes-microservices#readme"
+}
