@@ -44,8 +44,10 @@ app.get('/', (_, res) => {
 });
 
 // routes
+const stxRoute = require('./src/routes/stxRoute');
 
 // route configuration
+app.use(stxRoute);
 
 // run server
 const server = app.listen(appPort, () => {
