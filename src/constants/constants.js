@@ -26,6 +26,12 @@ const RECORD_TYPE = {
     STX: 'STX',
 };
 
+const PADDED_FIELD_SIZE = {
+    TXPLANAMT: 11,
+    WHLSLAMT: 11,
+    NONTXBLAMT: 11,
+};
+
 const ERROR_DESC = {
     MISSING_FIELD: 'Missing field',
     INVALID_FIELD: 'Invalid field',
@@ -40,4 +46,5 @@ module.exports = {
     PARAMS,
     ERROR_DESC,
     RECORD_TYPE,
+    PADDED_FIELD_SIZE,
 };
