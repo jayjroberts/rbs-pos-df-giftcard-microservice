@@ -15,7 +15,15 @@ const CONSTANTS = require('../constants/constants');
 
 // utils
 const tlogUtils = require('../utils/tlogUtils');
+const fileUpload = require('../utils/fileUpload');
+const fileCreate = require('../utils/fileCreate');
 
+/**
+ * Generate the output string on a tax line for a store
+ * @param {Object} totals the tax amounts
+ * @param {string} taxId the tax id
+ * @returns {string} a string representation of the total tax amounts
+ */
 function generateOutputPerTaxId(totals, taxId) {
     // get the tax plan number
     const id = '0' + taxId.slice(0, 1);
@@ -37,10 +45,16 @@ function generateOutputPerTaxId(totals, taxId) {
         totals.taxDiscounted,
         false
     );
-
+    // return as a string
     return `${id}${sumOfTaxAmountString}${taxCollectedAmountString}${taxDiscountedAmountString}`;
 }
 
+/**
+ * Generate STX output for a given store
+ * @param {Object} totals totals object containing the tax totals for this store
+ * @param {string} storeId store id
+ * @returns {string} string representation of the STX output
+ */
 function generateSTXOutputPerStoreId(totals, storeId) {
     let str = '';
     let dt = new Date();
@@ -227,6 +241,13 @@ async function runSTX(runType) {
             }
             currKey++;
         }
+        // upload the extract to Azure as a blob
+        const fileName = fileCreate.nameTmpFile(
+            runType,
+            CONSTANTS.RECORD_TYPE.STX
+        );
+
+        await fileUpload.createBlobFromString(fileName, response);
         return response;
     } catch (error) {
         LOGGER.error(`Error in runSTX() :: ${error}`);
