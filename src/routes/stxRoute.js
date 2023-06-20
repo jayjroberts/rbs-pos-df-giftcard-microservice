@@ -9,6 +9,7 @@ const { validationResult } = require('express-validator');
 const { queryValidator } = require('../utils/validations');
 const LOGGER = require('../logger/logger');
 const CONSTANTS = require('../constants/constants');
+const stxService = require('../services/stxService');
 
 router.post('/stx', queryValidator, async (req, res) => {
     // check that the request is valid
@@ -21,9 +22,9 @@ router.post('/stx', queryValidator, async (req, res) => {
         } else {
             let response;
             if (req.query.run === CONSTANTS.PARAMS.DAILY) {
-                response = 'Daily';
+                response = await stxService.runSTX(CONSTANTS.PARAMS.DAILY);
             } else {
-                response = 'Weekly';
+                response = await stxService.runSTX(CONSTANTS.PARAMS.WEEKLY);
             }
             res.send(response);
         }
