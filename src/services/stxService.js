@@ -16,6 +16,70 @@ const CONSTANTS = require('../constants/constants');
 // utils
 const tlogUtils = require('../utils/tlogUtils');
 
+function generateOutputPerTaxId(totals, taxId) {
+    // get the tax plan number
+    const id = '0' + taxId.slice(0, 1);
+
+    // sum of tax
+    const sumOfTaxAmountString = tlogUtils.createTotalAmountString(
+        totals.sumOfTax,
+        false
+    );
+
+    // tax collected
+    const taxCollectedAmountString = tlogUtils.createTotalAmountString(
+        totals.taxCollected,
+        false
+    );
+
+    // tax discounted
+    const taxDiscountedAmountString = tlogUtils.createTotalAmountString(
+        totals.taxDiscounted,
+        false
+    );
+
+    return `${id}${sumOfTaxAmountString}${taxCollectedAmountString}${taxDiscountedAmountString}`;
+}
+
+function generateSTXOutputPerStoreId(totals, storeId) {
+    let str = '';
+    let dt = new Date();
+    dt.setDate(dt.getDate() - 1);
+    const date = ('0' + dt.getDate()).slice(-2);
+    const month = ('0' + (dt.getMonth() + 1)).slice(-2);
+    let currKey = 0;
+    const numKeys = Object.keys(totals).length - 1;
+    for (let taxId of Object.keys(totals)) {
+        // get the record line for the current taxId
+        const firstPartLine = generateOutputPerTaxId(totals[taxId], taxId);
+
+        // get the end descriptor of the line
+        const desc = totals[taxId].name;
+
+        // create the end of the line string
+        const secondPartLine = `${desc} ${dt.getFullYear()}${month}${date}${storeId}${
+            CONSTANTS.RECORD_TYPE.STX
+        }`;
+
+        // calculate filler space
+        const padding = tlogUtils.generatePadding(
+            firstPartLine,
+            secondPartLine
+        );
+
+        // create line
+        const line = `${firstPartLine}${padding}${secondPartLine}`;
+
+        // append to str
+        str += line;
+        if (currKey !== numKeys) {
+            str += '\n';
+        }
+        currKey++;
+    }
+    return str;
+}
+
 /**
  * Calculate the tax totals for STX record
  * @param {Array} tlogs an array containing all tlogs for this store
@@ -148,12 +212,22 @@ async function runSTX(runType) {
         // sort by store id
         const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
 
+        const numKeys = Object.keys(logsByStore).length - 1;
+        let currKey = 0;
+        // iterate through each collection of tlogs by store id
         for (let storeId of Object.keys(logsByStore)) {
             const totals = getTaxesPerStoreId(logsByStore[storeId]);
-            LOGGER.debug(`Store ${storeId}`);
-            LOGGER.debug(JSON.stringify(totals));
+            // generate output
+            const storeOutput = generateSTXOutputPerStoreId(totals, storeId);
+            // add it to the response
+            response += storeOutput;
+            // add a new line between store outputs
+            if (currKey !== numKeys && storeOutput !== '') {
+                response += '\n';
+            }
+            currKey++;
         }
-        return logsByStore;
+        return response;
     } catch (error) {
         LOGGER.error(`Error in runSTX() :: ${error}`);
         throw new Error(error);
