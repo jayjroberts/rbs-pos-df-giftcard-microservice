@@ -56,7 +56,6 @@ function addPadding(ssbOutput) {
  */
 function generatessbOutputPerStoreId(totals, storeId) {
     let str = '';
-
     let dt = new Date();
     dt.setDate(dt.getDate() - 1);
     const date = ('0' + dt.getDate()).slice(-2);
@@ -66,13 +65,12 @@ function generatessbOutputPerStoreId(totals, storeId) {
     const taxAmounts = totals.taxAmounts;
     let s = '';
     let i = 0;
+
     while(i < taxAmounts.length)
     {
         s += taxAmounts[i];
         i++;
     }
-
-   
 
     const joinInfo = `${s}${wholeSaleAmount}${nonTaxableAmount}`;
 

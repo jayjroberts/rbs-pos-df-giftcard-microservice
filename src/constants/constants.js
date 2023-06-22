@@ -24,6 +24,7 @@ const PARAMS = {
 
 const RECORD_TYPE = {
     STX: 'STX',
+    SSB: 'SSB',
 };
 
 const PADDED_FIELD_SIZE = {
