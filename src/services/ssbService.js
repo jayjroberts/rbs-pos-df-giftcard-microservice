@@ -92,10 +92,15 @@ function generatessbOutputPerStoreId(totals, storeId) {
  * @param {Array} tlogs an array containing tlogs
  * @returns {object} an object containing the totals
  */
-function calculatessbFields(tlogs) {
+function calculateSsbFields(tlogs) {
     let taxPlanAmount = new Array(8);
     let wholeSaleAmount = 0;
     let nonTaxableAmount = 0;
+    let netMdseSales = 0;
+    let tlTaxableSales = 0;
+    let tlFSSales = 0;
+    let tlWicSales = 0;
+    // nonTaxableAmount = netMdseSales - tlTaxableSales - tlFSSales - tlWicSales - wholeSaleAmount
 
     // set each tax plan amount to 0
     for(let i = 0; i < taxPlanAmount.length; i++)
@@ -109,7 +114,7 @@ function calculatessbFields(tlogs) {
     {
 
         // SALES TRANSACTION
-        if(tlog.tlog.isVoided !== "true")
+        if(tlog.tlog.isVoided !== "true" && tlog.tlog.isSuspended !== "true" && tlog.tlog.isOpen !== "true")
         {
            // loop through tax object and collect info
             if(tlog.tlog.totalTaxes.length > 0)
@@ -121,9 +126,45 @@ function calculatessbFields(tlogs) {
                     taxPlanAmount[taxId] += tax.amount.amount;    
                 }
             }
+
+            // COLLECT WHOLESALE AMOUNT
+            wholeSaleAmount += tlog.tlog.totals.taxExemptAmount.amount;
+            // COLLECT NET SALES AMOUNT
+            netMdseSales += tlog.tlog.totals.netAmount.amount;
+            // COLLECT TAXABLE AMOUNT
+            if(tlog.tlog.totalTaxes.length > 0)
+            {
+                for (let tax of tlog.tlog.totalTaxes)
+                {
+                    tlTaxableSales += tax.taxableAmount.amount;
+                }
+            }
+            
+            
+            if(tlog.tlog.tenders.length > 0)
+            {
+                for (let t of tlog.tlog.tenders)
+                {
+                    switch(t.id)
+                    {
+                        case 23:
+                            // Foodstamps
+                            tlFSSales += t.tenderAmount.amount;
+                            break;
+                        case 28:
+                        case 48:
+                            // wic
+                            tlWicSales += t.tenderAmount.amount;
+                            break;
+                    }
+                }
+            }
+
         }
     }
 
+    // Calculate nonTaxableAmount
+    nonTaxableAmount = netMdseSales - tlTaxableSales - tlFSSales - tlWicSales - wholeSaleAmount;
     // Format amounts
     let i = 0;
     while (i < taxPlanAmount.length)
@@ -150,8 +191,8 @@ function calculatessbFields(tlogs) {
  * @param {string} runType weekly or daily
  * @returns {Array} an array of documents that match
  */
-async function findssbTLogs(runType) {
-    LOGGER.debug(`Entering into findssbTLogs()`);
+async function findSsbTLogs(runType) {
+    LOGGER.debug(`Entering into findSsbTLogs()`);
     // create query and projection
     const query = {
         'tlog.transactionType': { $in:['SALES']},
@@ -161,8 +202,10 @@ async function findssbTLogs(runType) {
         'siteInfo.id': 1,
         'tlog.tenders':1,
         'tlog.totalTaxes':1,
+        'tlog.totals':1,
         'tlog.isVoided':1,
-        'tlog.totals.voidsAmount':1,
+        'tlog.isSuspended':1,
+        'tlog.isOpen':1,
         'tlog.destinationAccount':1,
         'tlog.sourceAccount':1,
 
@@ -209,7 +252,7 @@ async function findssbTLogs(runType) {
             .then((result) => result);
         return result;
     } catch (err) {
-        LOGGER.error(`Error in findssbTLogs() :: ${err}`);
+        LOGGER.error(`Error in findSsbTLogs() :: ${err}`);
         throw new Error(err);
     }
 }
@@ -224,12 +267,12 @@ async function runSSB(runType) {
     // get the transactions from mongoDB
     let responseObj = '';
     try {
-        const tlogs = await findssbTLogs(runType);
+        const tlogs = await findSsbTLogs(runType);
         // sort tlogs by store id
         const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
 
         for (let storeId of Object.keys(logsByStore)) {
-            const totals = calculatessbFields(logsByStore[storeId]);
+            const totals = calculateSsbFields(logsByStore[storeId]);
 
             const ssbOutput = generatessbOutputPerStoreId(totals, storeId);
             responseObj += ssbOutput;
