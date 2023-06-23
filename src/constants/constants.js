@@ -24,6 +24,13 @@ const PARAMS = {
 
 const RECORD_TYPE = {
     STX: 'STX',
+    SSB: 'SSB',
+};
+
+const PADDED_FIELD_SIZE = {
+    TXPLANAMT: 11,
+    WHLSLAMT: 11,
+    NONTXBLAMT: 11,
 };
 
 const ERROR_DESC = {
@@ -40,4 +47,5 @@ module.exports = {
     PARAMS,
     ERROR_DESC,
     RECORD_TYPE,
+    PADDED_FIELD_SIZE,
 };

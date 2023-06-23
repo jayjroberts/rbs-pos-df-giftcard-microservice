@@ -45,9 +45,11 @@ app.get('/', (_, res) => {
 
 // routes
 const stxRoute = require('./src/routes/stxRoute');
+const ssbRoute = require('./src/routes/ssbRoute');
 
 // route configuration
 app.use(stxRoute);
+app.use(ssbRoute);
 
 // run server
 const server = app.listen(appPort, () => {
