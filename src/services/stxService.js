@@ -110,7 +110,7 @@ function getTaxesPerStoreId(tlogs) {
             const taxName = tax.name;
             // aggregate totalTaxes.amount.amount
             if (Object.keys(totalTaxes).includes(taxId)) {
-                totalTaxes[taxId].sumOfTax += tax.amount.amount;
+                totalTaxes[taxId].sumOfTax += tax.taxableAmount.amount;
             } else {
                 // create a new tax entry in totalTaxes object
                 totalTaxes[taxId] = {
