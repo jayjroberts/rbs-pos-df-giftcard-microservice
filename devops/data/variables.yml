@@ -19,8 +19,8 @@ variables:
   SonarServerName: sonarqube.service.common.peapod.com   #URL of your SonarQube instance
 
   ### HCL Appscan Vars
-  dashboardID: !!!CHANGEME!!!   #ID found in your application within HCL
+  dashboardID: 21041ba3-e03b-488f-b263-e3504e888ff2   #ID found in your application within HCL
   hclHighSeverity: 100                                #Threshold limit for high severities
   scanLoc: ./                                         #Files to scan for HCL
-  scanName: !!!CHANGEME!!!      #ScanName of application HCL
+  scanName: rbs-pos-df-taxes-microservices      #ScanName of application HCL
   scanSpeedOptions: simple                            #Scan Option in HCL

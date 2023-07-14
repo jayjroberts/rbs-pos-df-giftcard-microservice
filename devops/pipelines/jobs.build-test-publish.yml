@@ -90,7 +90,7 @@ jobs:
       - CodeQualityTesting
       - SecurityAnalysis
     displayName: Build and Push Images to ACR
-    # condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/develop'))
+    condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/develop'))
     pool:
       vmImage: ubuntu-latest
     steps:
