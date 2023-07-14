@@ -115,7 +115,7 @@ function getTaxesPerStoreId(tlogs) {
                 // create a new tax entry in totalTaxes object
                 totalTaxes[taxId] = {
                     name: taxName,
-                    sumOfTax: tax.amount.amount,
+                    sumOfTax: tax.taxableAmount.amount,
                     taxCollected: 0,
                     taxDiscounted: 0,
                 };
