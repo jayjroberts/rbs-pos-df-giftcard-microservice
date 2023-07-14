@@ -126,16 +126,3 @@ jobs:
 ###### original pipeline
 # variables:
 #   imageName: 'acrnextgenposnonprde201.azurecr.io/wapp-07:BE-0.$(build.buildId)'
-
-# steps:
-#     - task: AzureKeyVault@2
-#       displayName: 'Azure KeyVault: acrnextgenposnonprde201'
-#       inputs:
-#           azureSubscription: 'sub-adusatech-nonprd-rbs-nextgenpos'
-#           keyVaultName: kvnxtgenposnpnoeu01
-#           RunAsPreJob: true
-#     - script: docker build -f Dockerfile -t $(imageName) .
-#       displayName: 'docker build and push'
-#     - script: docker login -u $(acrUsr) -p $(acrPwd) acrnextgenposnonprde201.azurecr.io
-#     - script: docker push $(imageName)
-#     - script: docker logout
