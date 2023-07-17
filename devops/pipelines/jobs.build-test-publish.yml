@@ -122,7 +122,3 @@ jobs:
           action: 'Push an image'
           imageName: '$(imageName).$(Build.BuildId)'
           includeLatestTag: flase
-
-###### original pipeline
-# variables:
-#   imageName: 'acrnextgenposnonprde201.azurecr.io/wapp-07:BE-0.$(build.buildId)'
