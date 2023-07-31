@@ -156,6 +156,7 @@ async function findStxTLogs(runType) {
         'tlog.isVoided': false,
         'tlog.isSuspended': false,
         'tlog.isRecalled': false,
+        isTrainingMode: false,
     };
 
     const projection = {

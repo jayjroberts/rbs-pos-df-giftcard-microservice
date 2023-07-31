@@ -66,8 +66,7 @@ function generatessbOutputPerStoreId(totals, storeId) {
     let s = '';
     let i = 0;
 
-    while(i < taxAmounts.length)
-    {
+    while (i < taxAmounts.length) {
         s += taxAmounts[i];
         i++;
     }
@@ -101,27 +100,24 @@ function calculateSsbFields(tlogs) {
     // nonTaxableAmount = netMdseSales - tlTaxableSales - tlFSSales - tlWicSales - wholeSaleAmount
 
     // set each tax plan amount to 0
-    for(let i = 0; i < taxPlanAmount.length; i++)
-    {
+    for (let i = 0; i < taxPlanAmount.length; i++) {
         taxPlanAmount[i] = 0;
     }
-  
-    
-    // iterate over each tlog
-    for (let tlog of tlogs) 
-    {
 
+    // iterate over each tlog
+    for (let tlog of tlogs) {
         // SALES TRANSACTION
-        if(tlog.tlog.isVoided !== "true" && tlog.tlog.isSuspended !== "true" && tlog.tlog.isOpen !== "true")
-        {
-           // loop through tax object and collect info
-            if(tlog.tlog.totalTaxes.length > 0)
-            {
-                for (let tax of tlog.tlog.totalTaxes)
-                {
-                    const taxIDArray = tax.id.split("-");   // tax plan 1 - 8
-                    const taxId = taxIDArray[0] - 1;    // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] += tax.amount.amount;    
+        if (
+            tlog.tlog.isVoided !== 'true' &&
+            tlog.tlog.isSuspended !== 'true' &&
+            tlog.tlog.isOpen !== 'true'
+        ) {
+            // loop through tax object and collect info
+            if (tlog.tlog.totalTaxes.length > 0) {
+                for (let tax of tlog.tlog.totalTaxes) {
+                    const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
+                    const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
+                    taxPlanAmount[taxId] += tax.amount.amount;
                 }
             }
 
@@ -130,21 +126,15 @@ function calculateSsbFields(tlogs) {
             // COLLECT NET SALES AMOUNT
             netMdseSales += tlog.tlog.totals.netAmount.amount;
             // COLLECT TAXABLE AMOUNT
-            if(tlog.tlog.totalTaxes.length > 0)
-            {
-                for (let tax of tlog.tlog.totalTaxes)
-                {
+            if (tlog.tlog.totalTaxes.length > 0) {
+                for (let tax of tlog.tlog.totalTaxes) {
                     tlTaxableSales += tax.taxableAmount.amount;
                 }
             }
-            
-            
-            if(tlog.tlog.tenders.length > 0)
-            {
-                for (let t of tlog.tlog.tenders)
-                {
-                    switch(t.id)
-                    {
+
+            if (tlog.tlog.tenders.length > 0) {
+                for (let t of tlog.tlog.tenders) {
+                    switch (t.id) {
                         case 23:
                             // Foodstamps
                             tlFSSales += t.tenderAmount.amount;
@@ -157,32 +147,41 @@ function calculateSsbFields(tlogs) {
                     }
                 }
             }
-
         }
     }
 
     // Calculate nonTaxableAmount
-    nonTaxableAmount = netMdseSales - tlTaxableSales - tlFSSales - tlWicSales - wholeSaleAmount;
+    nonTaxableAmount =
+        netMdseSales -
+        tlTaxableSales -
+        tlFSSales -
+        tlWicSales -
+        wholeSaleAmount;
     // Format amounts
     let i = 0;
-    while (i < taxPlanAmount.length)
-    {
+    while (i < taxPlanAmount.length) {
         taxPlanAmount[i] = tlogUtils.addPaddedZeros(
             parseInt(taxPlanAmount[i] * 100),
-            CONSTANTS.PADDED_FIELD_SIZE.TXPLANAMT);
-            i++;
+            CONSTANTS.PADDED_FIELD_SIZE.TXPLANAMT
+        );
+        i++;
     }
-    wholeSaleAmount = tlogUtils.addPaddedZeros(parseInt(wholeSaleAmount * 100),CONSTANTS.PADDED_FIELD_SIZE.WHLSLAMT);
-    nonTaxableAmount = tlogUtils.addPaddedZeros(parseInt(nonTaxableAmount * 100),CONSTANTS.PADDED_FIELD_SIZE.NONTXBLAMT);
-    
+    wholeSaleAmount = tlogUtils.addPaddedZeros(
+        parseInt(wholeSaleAmount * 100),
+        CONSTANTS.PADDED_FIELD_SIZE.WHLSLAMT
+    );
+    nonTaxableAmount = tlogUtils.addPaddedZeros(
+        parseInt(nonTaxableAmount * 100),
+        CONSTANTS.PADDED_FIELD_SIZE.NONTXBLAMT
+    );
+
     const returnObj = {
         taxAmounts: taxPlanAmount,
         wholeSaleAmount: wholeSaleAmount,
         nonTaxableAmount: nonTaxableAmount,
     };
-   return returnObj;
+    return returnObj;
 }
-
 
 /**
  * finds the tlogs that match the criteria for ssb
@@ -193,20 +192,20 @@ async function findSsbTLogs(runType) {
     LOGGER.debug(`Entering into findSsbTLogs()`);
     // create query and projection
     const query = {
-        'tlog.transactionType': { $in:['SALES']},
+        'tlog.transactionType': { $in: ['SALES'] },
+        isTrainingMode: false,
     };
 
     const projection = {
         'siteInfo.id': 1,
-        'tlog.tenders':1,
-        'tlog.totalTaxes':1,
-        'tlog.totals':1,
-        'tlog.isVoided':1,
-        'tlog.isSuspended':1,
-        'tlog.isOpen':1,
-        'tlog.destinationAccount':1,
-        'tlog.sourceAccount':1,
-
+        'tlog.tenders': 1,
+        'tlog.totalTaxes': 1,
+        'tlog.totals': 1,
+        'tlog.isVoided': 1,
+        'tlog.isSuspended': 1,
+        'tlog.isOpen': 1,
+        'tlog.destinationAccount': 1,
+        'tlog.sourceAccount': 1,
     };
 
     // add different date ranges depending on the run type
