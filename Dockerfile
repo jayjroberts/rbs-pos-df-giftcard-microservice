@@ -22,5 +22,8 @@ COPY . /usr/src/app/webapp07-representation-data-apis
 # Mapping to 80 public port
 EXPOSE 80
 
+# Run as non root user
+USER node
+
 # Starting the application
 CMD [ "node", "index.js" ]
