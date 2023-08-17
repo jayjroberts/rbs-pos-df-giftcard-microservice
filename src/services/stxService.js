@@ -170,23 +170,19 @@ async function findStxTLogs(runType) {
     if (runType === CONSTANTS.PARAMS.DAILY) {
         // create the daily run query
         let start = new Date();
-        start.setUTCHours(0, 0, 0, 0);
-        start.setDate(start.getDate() - 1); // always runs for yesterday
+        start.setUTCHours(0, 0, 0);
+        start.setDate(start.getDate() - 1); // turn date into yesterday
+        start = start.toISOString();
+        start = start.substring(0, start.length -5) + 'Z';
 
-        let end = new Date();
-        end.setUTCHours(23, 59, 59);
-        end.setDate(end.getDate() - 1);
         // add to query
-        query['openDateTimeUtc.dateTime'] = {
-            $gte: start.toISOString(),
-            $lte: end.toISOString(),
-        };
+        query['businessDay.dateTime'] = start;
     }
     if (runType === CONSTANTS.PARAMS.WEEKLY) {
-        // transactions must be any date from the previous sunday to saturday
+        // query must be any date from the previous sunday to saturday
         let start = new Date();
         // get previous sunday date
-        start.setUTCHours(0, 0, 0, 0);
+        start.setUTCHours(0, 0, 0);
         start.setDate(start.getDate() - 7);
 
         let end = new Date();
@@ -194,7 +190,7 @@ async function findStxTLogs(runType) {
         end.setUTCHours(23, 59, 59);
         end.setDate(end.getDate() - 1);
         // add to query
-        query['openDateTimeUtc.dateTime'] = {
+        query['businessDay.dateTime'] = {
             $gte: start.toISOString(),
             $lte: end.toISOString(),
         };
