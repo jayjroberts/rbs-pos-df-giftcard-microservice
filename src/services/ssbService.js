@@ -52,14 +52,21 @@ function addPadding(ssbOutput) {
  * Generate the ssb output in the correct format
  * @param {object} totals an object containing the amounts b
  * @param {string} storeId the store number
+ * @param {string} endDate optional for adhoc run
  * @returns {string} a string containing the formatted output
  */
-function generatessbOutputPerStoreId(totals, storeId) {
+function generatessbOutputPerStoreId(totals, storeId, endDate = null) {
     let str = '';
-    let dt = new Date();
-    dt.setDate(dt.getDate() - 1);
-    const date = ('0' + dt.getDate()).slice(-2);
-    const month = ('0' + (dt.getMonth() + 1)).slice(-2);
+    // the date will vary depending on the type of run
+    let dt;
+    if (endDate) {
+        dt = new Date(endDate);
+    } else {
+        dt = new Date();
+        dt.setDate(dt.getDate() - 1); // set date to yesterday
+    }
+    const date = ('0' + dt.getUTCDate()).slice(-2);
+    const month = ('0' + (dt.getUTCMonth() + 1)).slice(-2);
     const wholeSaleAmount = totals.wholeSaleAmount;
     const nonTaxableAmount = totals.nonTaxableAmount;
     const taxAmounts = totals.taxAmounts;
@@ -186,9 +193,11 @@ function calculateSsbFields(tlogs) {
 /**
  * finds the tlogs that match the criteria for ssb
  * @param {string} runType weekly or daily
+ * @param {string} startDate optional, only for adhoc run
+ * @param {string} endDate optional, only for adhoc run
  * @returns {Array} an array of documents that match
  */
-async function findSsbTLogs(runType) {
+async function findSsbTLogs(runType, startDate, endDate) {
     LOGGER.debug(`Entering into findSsbTLogs()`);
     // create query and projection
     const query = {
@@ -217,11 +226,9 @@ async function findSsbTLogs(runType) {
         let start = new Date();
         start.setUTCHours(0, 0, 0);
         start.setDate(start.getDate() - 1); // turn date into yesterday
-        start = start.toISOString();
-        start = start.substring(0, start.length -5) + 'Z';
 
         // add to query
-        query['businessDay.dateTime'] = start;
+        query['businessDay.dateTime'] = start.toISOString().split('.')[0] + 'Z';
     }
     if (runType === CONSTANTS.PARAMS.WEEKLY) {
         // query must be any date from the previous sunday to saturday
@@ -236,8 +243,20 @@ async function findSsbTLogs(runType) {
         end.setDate(end.getDate() - 1);
         // add to query
         query['businessDay.dateTime'] = {
-            $gte: start.toISOString(),
-            $lte: end.toISOString(),
+            $gte: start.toISOString().split('.')[0] + 'Z',
+            $lte: end.toISOString().split('.')[0] + 'Z',
+        };
+    }
+    if (runType === CONSTANTS.PARAMS.ADHOC) {
+        // set a custom time range to look for transactions
+        let start = new Date(startDate);
+        start.setUTCHours(0, 0, 0, 0);
+        let end = new Date(endDate);
+        end.setUTCHours(0, 0, 0, 0);
+
+        query['businessDay.dateTime'] = {
+            $gte: start.toISOString().split('.')[0] + 'Z',
+            $lte: end.toISOString().split('.')[0] + 'Z',
         };
     }
 
@@ -256,21 +275,28 @@ async function findSsbTLogs(runType) {
 /**
  * This function execute all ssb calculations to generate extract
  * and uploads the file to azure storage
- * @param {string} runType 'weekly' or 'daily'
+ * @param {string} runType 'daily', 'weekly', 'adhoc'
+ * @param {string} startDate optional, only for adhoc runType
+ * @param {string} endDate optional, only for adhoc runType
  * @returns {string} a string with the generated extract
  */
-async function runSSB(runType) {
+async function runSSB(runType, startDate = null, endDate = null) {
     // get the transactions from mongoDB
     let responseObj = '';
     try {
-        const tlogs = await findSsbTLogs(runType);
+        const tlogs = await findSsbTLogs(runType, startDate, endDate);
         // sort tlogs by store id
         const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
 
+        // calculate SSB fields for each store
         for (let storeId of Object.keys(logsByStore)) {
             const totals = calculateSsbFields(logsByStore[storeId]);
 
-            const ssbOutput = generatessbOutputPerStoreId(totals, storeId);
+            const ssbOutput = generatessbOutputPerStoreId(
+                totals,
+                storeId,
+                endDate
+            );
             responseObj += ssbOutput;
         }
 
@@ -280,7 +306,8 @@ async function runSSB(runType) {
         // upload file to azure
         const filename = fileCreate.nameTmpFile(
             runType,
-            CONSTANTS.RECORD_TYPE.SSB
+            CONSTANTS.RECORD_TYPE.SSB,
+            endDate
         );
 
         await fileUpload.createBlobFromString(filename, storeLineOutput);

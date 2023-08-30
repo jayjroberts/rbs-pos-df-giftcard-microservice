@@ -30,9 +30,12 @@ function nameTmpFile(runType, recordType, endDate = null) {
     // check the run type
     if (runType === CONSTANTS.PARAMS.DAILY) {
         return `dly_${recordType}_${dt.getFullYear()}${month}${date}.dat`;
-    } else {
+    } else if (runType === CONSTANTS.PARAMS.WEEKLY) {
         // weekly file type
         return `wk_${recordType}_${dt.getFullYear()}${month}${date}.dat`;
+    } else {
+        // adhoc file type
+        return `adhoc_${recordType}_${dt.getFullYear()}${month}${date}.dat`;
     }
 }
 
