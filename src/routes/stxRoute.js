@@ -28,6 +28,7 @@ const stxService = require('../services/stxService');
  */
 router.post('/stx', queryValidator, async (req, res) => {
     // check that the request is valid
+    LOGGER.info('Entering into POST /stx');
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -37,9 +38,20 @@ router.post('/stx', queryValidator, async (req, res) => {
         } else {
             let response;
             if (req.query.run === CONSTANTS.PARAMS.DAILY) {
+                // run daily record
                 response = await stxService.runSTX(CONSTANTS.PARAMS.DAILY);
-            } else {
+            } else if (req.query.run === CONSTANTS.PARAMS.WEEKLY) {
+                // run weekly record
                 response = await stxService.runSTX(CONSTANTS.PARAMS.WEEKLY);
+            } else {
+                // run adhoc record
+                const startDate = req.body.startDate;
+                const endDate = req.body.endDate;
+                response = await stxService.runSTX(
+                    CONSTANTS.PARAMS.ADHOC,
+                    startDate,
+                    endDate
+                );
             }
             res.send(response);
         }
