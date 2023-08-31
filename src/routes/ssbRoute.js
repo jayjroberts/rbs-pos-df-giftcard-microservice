@@ -13,6 +13,7 @@ const ssbService = require('../services/ssbService');
 
 router.post('/ssb', queryValidator, async (req, res) => {
     // check that the request is valid
+    LOGGER.info('Entering into POST /ssb');
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -23,8 +24,17 @@ router.post('/ssb', queryValidator, async (req, res) => {
             let response;
             if (req.query.run === CONSTANTS.PARAMS.DAILY) {
                 response = await ssbService.runSSB(CONSTANTS.PARAMS.DAILY);
-            } else {
+            } else if (req.query.run === CONSTANTS.PARAMS.WEEKLY) {
                 response = await ssbService.runSSB(CONSTANTS.PARAMS.WEEKLY);
+            } else {
+                // run adhoc record
+                const startDate = req.body.startDate;
+                const endDate = req.body.endDate;
+                response = await ssbService.runSSB(
+                    CONSTANTS.PARAMS.ADHOC,
+                    startDate,
+                    endDate
+                );
             }
             res.send(response);
         }
