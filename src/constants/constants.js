@@ -14,6 +14,8 @@ const LINE_SIZE = 5;
 
 const BYTE_LENGTH = 128;
 
+const DESC_LENGTH = 18;
+
 const RUN = ['daily', 'weekly', 'adhoc'];
 
 const PARAMS = {
@@ -52,6 +54,7 @@ module.exports = {
     MODEL,
     LINE_SIZE,
     BYTE_LENGTH,
+    DESC_LENGTH,
     RUN,
     PARAMS,
     BODY,

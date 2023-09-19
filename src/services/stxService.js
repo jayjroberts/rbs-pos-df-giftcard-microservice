@@ -75,10 +75,18 @@ function generateSTXOutputPerStoreId(totals, storeId, endDate = null) {
         const firstPartLine = generateOutputPerTaxId(totals[taxId], taxId);
 
         // get the end descriptor of the line
-        const desc = totals[taxId].name;
+        let desc = totals[taxId].name.trim();
+
+        // left align the descriptor
+        if (desc.length > CONSTANTS.DESC_LENGTH) {
+            // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
+            // then we need to truncate the descriptor
+            desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
+        }
+        const descriptionPadding = tlogUtils.descriptionAlignment(desc);
 
         // create the end of the line string
-        const secondPartLine = `${desc} ${dt.getFullYear()}${month}${date}${storeId}${
+        const secondPartLine = `${desc}${descriptionPadding}${dt.getFullYear()}${month}${date}${storeId}${
             CONSTANTS.RECORD_TYPE.STX
         }`;
 
