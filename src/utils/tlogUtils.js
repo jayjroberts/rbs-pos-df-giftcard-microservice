@@ -174,6 +174,22 @@ function padString(first, second) {
     return ret;
 }
 
+/**
+ * This helper function is used to calculate
+ * the correct amount of padding for end descriptors in records
+ * @param {String} desc the descriptor
+ * @returns the correct amount of padding
+ */
+function descriptionAlignment(desc) {
+    // The description at the end of a line
+    // must be left justified and the total length
+    // should be 18 bits
+    let descLength = new Blob([desc]).size;
+    const missingBytes = CONSTANTS.DESC_LENGTH - descLength;
+    // generate the padding
+    return new Array(missingBytes + 1).join(' ');
+}
+
 module.exports = {
     extractLogsByStoreId,
     createTotalAmountString,
@@ -181,4 +197,5 @@ module.exports = {
     addPaddedZeros,
     formatString,
     padString,
+    descriptionAlignment,
 };
