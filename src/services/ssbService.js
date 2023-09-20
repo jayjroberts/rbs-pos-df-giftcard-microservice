@@ -124,7 +124,7 @@ function calculateSsbFields(tlogs) {
                 for (let tax of tlog.tlog.totalTaxes) {
                     const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
                     const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] += tax.amount.amount;
+                    taxPlanAmount[taxId] += tax.taxableAmount.amount;
                 }
             }
 
