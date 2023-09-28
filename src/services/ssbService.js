@@ -112,16 +112,21 @@ function calculateSsbFields(tlogs) {
     }
 
     // iterate over each tlog
-    for (let tlog of tlogs) {
-        // SALES TRANSACTION
+    for (let tlog of tlogs) 
+    {
         if (
             tlog.tlog.isVoided !== 'true' &&
             tlog.tlog.isSuspended !== 'true' &&
             tlog.tlog.isOpen !== 'true'
         ) {
-            // loop through tax object and collect info
-            if (tlog.tlog.totalTaxes.length > 0) {
-                for (let tax of tlog.tlog.totalTaxes) {
+        // loop through tax object and collect info
+        if(tlog.tlog.transactionType == 'SALES')
+        {
+            // SALE
+            if (tlog.tlog.totalTaxes.length > 0) 
+            {
+                for (let tax of tlog.tlog.totalTaxes) 
+                {
                     const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
                     const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
                     taxPlanAmount[taxId] += tax.taxableAmount.amount;
@@ -133,15 +138,20 @@ function calculateSsbFields(tlogs) {
             // COLLECT NET SALES AMOUNT
             netMdseSales += tlog.tlog.totals.netAmount.amount;
             // COLLECT TAXABLE AMOUNT
-            if (tlog.tlog.totalTaxes.length > 0) {
-                for (let tax of tlog.tlog.totalTaxes) {
+            if (tlog.tlog.totalTaxes.length > 0) 
+            {
+                for (let tax of tlog.tlog.totalTaxes) 
+                {
                     tlTaxableSales += tax.taxableAmount.amount;
                 }
             }
 
-            if (tlog.tlog.tenders.length > 0) {
-                for (let t of tlog.tlog.tenders) {
-                    switch (t.id) {
+            if (tlog.tlog.tenders.length > 0) 
+            {
+                for (let t of tlog.tlog.tenders)
+                 {
+                    switch (t.id) 
+                    {
                         case 23:
                             // Foodstamps
                             tlFSSales += t.tenderAmount.amount;
@@ -154,6 +164,53 @@ function calculateSsbFields(tlogs) {
                     }
                 }
             }
+        }
+        else
+        {
+            // RETURN
+            if (tlog.tlog.totalTaxes.length > 0) 
+            {
+                for (let tax of tlog.tlog.totalTaxes) 
+                {
+                    const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
+                    const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
+                    taxPlanAmount[taxId] -= tax.taxableAmount.amount;
+                }
+            }
+
+            // COLLECT WHOLESALE AMOUNT
+            wholeSaleAmount -= tlog.tlog.totals.taxExemptAmount.amount;
+            // COLLECT NET SALES AMOUNT
+            netMdseSales -= tlog.tlog.totals.netAmount.amount;
+            // COLLECT TAXABLE AMOUNT
+            if (tlog.tlog.totalTaxes.length > 0) 
+            {
+                for (let tax of tlog.tlog.totalTaxes) 
+                {
+                    tlTaxableSales -= tax.taxableAmount.amount;
+                }
+            }
+
+            if (tlog.tlog.tenders.length > 0) 
+            {
+                for (let t of tlog.tlog.tenders)
+                 {
+                    switch (t.id) 
+                    {
+                        case 23:
+                            // Foodstamps
+                            tlFSSales -= t.tenderAmount.amount;
+                            break;
+                        case 28:
+                        case 48:
+                            // wic
+                            tlWicSales -= t.tenderAmount.amount;
+                            break;
+                    }
+                }
+            }
+        }
+
         }
     }
 
@@ -201,7 +258,7 @@ async function findSsbTLogs(runType, startDate, endDate) {
     LOGGER.debug(`Entering into findSsbTLogs()`);
     // create query and projection
     const query = {
-        'tlog.transactionType': { $in: ['SALES'] },
+        'tlog.transactionType': { $in: ['SALES','RETURN'] },
         'tlog.isVoided': false,
         'tlog.isSuspended': false,
         'tlog.isRecalled': false,
@@ -210,14 +267,7 @@ async function findSsbTLogs(runType, startDate, endDate) {
 
     const projection = {
         'siteInfo.id': 1,
-        'tlog.tenders': 1,
-        'tlog.totalTaxes': 1,
-        'tlog.totals': 1,
-        'tlog.isVoided': 1,
-        'tlog.isSuspended': 1,
-        'tlog.isOpen': 1,
-        'tlog.destinationAccount': 1,
-        'tlog.sourceAccount': 1,
+        'tlog': 1,
     };
 
     // add different date ranges depending on the run type
