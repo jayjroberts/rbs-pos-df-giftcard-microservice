@@ -5,6 +5,7 @@
  */
 
 const { check } = require('express-validator');
+const moment = require('moment');
 
 const CONSTANTS = require('../constants/constants');
 
@@ -21,13 +22,13 @@ const validator = [
         .if(check(CONSTANTS.PARAMS.RUN).equals(CONSTANTS.PARAMS.ADHOC))
         .isString()
         .withMessage(CONSTANTS.ERROR_DESC.MISSING_START_DATE)
-        .isDate()
+        .custom((date) => moment(date, 'YYYY-MM-DD', true).isValid())
         .withMessage(CONSTANTS.ERROR_DESC.INVALID_DATE),
     check(CONSTANTS.BODY.END_DATE)
         .if(check(CONSTANTS.PARAMS.RUN).equals(CONSTANTS.PARAMS.ADHOC))
         .isString()
         .withMessage(CONSTANTS.ERROR_DESC.MISSING_END_DATE)
-        .isDate()
+        .custom((date) => moment(date, 'YYYY-MM-DD', true).isValid())
         .withMessage(CONSTANTS.ERROR_DESC.INVALID_DATE),
 ];
 
