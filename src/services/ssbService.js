@@ -133,8 +133,12 @@ function calculateSsbFields(tlogs) {
                 }
             }
 
-            // COLLECT WHOLESALE AMOUNT
-            wholeSaleAmount += tlog.tlog.totals.taxExemptAmount.amount;
+            // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
+            if(tlog.tlog.totals.taxExemptAmount.amount > 0)
+            {
+                wholeSaleAmount += tlog.tlog.totals.netAmount.amount;
+            }
+           
             // COLLECT NET SALES AMOUNT
             netMdseSales += tlog.tlog.totals.netAmount.amount;
             // COLLECT TAXABLE AMOUNT
@@ -268,6 +272,7 @@ async function findSsbTLogs(runType, startDate, endDate) {
     const projection = {
         'siteInfo.id': 1,
         'tlog': 1,
+        'transactionNumber':1,
     };
 
     // add different date ranges depending on the run type
