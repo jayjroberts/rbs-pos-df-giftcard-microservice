@@ -96,7 +96,7 @@ function generatessbOutputPerStoreId(totals, storeId, endDate = null) {
  * @param {Array} tlogs an array containing tlogs
  * @returns {object} an object containing the totals
  */
-function calculateSsbFields(tlogs) {
+function calcSsbFields(tlogs,storeId) {
     let taxPlanAmount = new Array(8);
     let wholeSaleAmount = 0;
     let nonTaxableAmount = 0;
@@ -129,24 +129,39 @@ function calculateSsbFields(tlogs) {
                 {
                     const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
                     const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] += tax.taxableAmount.amount;
+                    taxPlanAmount[taxId] += Math.round(tax.taxableAmount.amount * 100);
                 }
             }
 
             // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
-            if(tlog.tlog.totals.taxExemptAmount.amount > 0)
+            if (typeof tlog.tlog.items !== 'undefined' && tlog.tlog.items.length > 0) 
             {
-                wholeSaleAmount += tlog.tlog.totals.netAmount.amount;
+                for (let itm of tlog.tlog.items)
+                {
+                    if(typeof itm.itemTaxes !== 'undefined' && itm.itemTaxes.length > 0)
+                    {
+                        for (let itmTax of itm.itemTaxes)
+                        {
+                            if(typeof itmTax.taxExempt !== 'undefined' && itmTax.isVoided !== true)
+                            {
+                                if( itmTax.taxExempt.exemptAmount.amount > 0)
+                                {
+                                    wholeSaleAmount += Math.round(itmTax.taxableAmount.amount * 100);
+                                }
+                            }
+                        }
+                    }
+                }
             }
            
             // COLLECT NET SALES AMOUNT
-            netMdseSales += tlog.tlog.totals.netAmount.amount;
+            netMdseSales += Math.round(tlog.tlog.totals.netAmount.amount * 100);
             // COLLECT TAXABLE AMOUNT
             if (tlog.tlog.totalTaxes.length > 0) 
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    tlTaxableSales += tax.taxableAmount.amount;
+                    tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
                 }
             }
 
@@ -158,12 +173,12 @@ function calculateSsbFields(tlogs) {
                     {
                         case 23:
                             // Foodstamps
-                            tlFSSales += t.tenderAmount.amount;
+                            tlFSSales += Math.round(t.tenderAmount.amount * 100);
                             break;
                         case 28:
                         case 48:
                             // wic
-                            tlWicSales += t.tenderAmount.amount;
+                            tlWicSales += Math.round(t.tenderAmount.amount * 100);
                             break;
                     }
                 }
@@ -178,12 +193,32 @@ function calculateSsbFields(tlogs) {
                 {
                     const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
                     const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] -= tax.taxableAmount.amount;
+                    taxPlanAmount[taxId] -= Math.round(tax.taxableAmount.amount * 100);
                 }
             }
 
             // COLLECT WHOLESALE AMOUNT
-            wholeSaleAmount -= tlog.tlog.totals.taxExemptAmount.amount;
+            if (typeof tlog.tlog.items !== 'undefined' && tlog.tlog.items.length > 0) 
+            {
+                for (let itm of tlog.tlog.items)
+                {
+                    if(typeof itm.itemTaxes !== 'undefined' && itm.itemTaxes.length > 0)
+                    {
+                        for (let itmTax of itm.itemTaxes)
+                        {
+                            if(typeof itmTax.taxExempt !== 'undefined' && itmTax.isVoided !== true)
+                            {
+                                if( itmTax.taxExempt.exemptAmount.amount > 0)
+                                {
+                                    wholeSaleAmount -= Math.round(itm.itemTaxes.taxableAmount.amount * 100);
+                                }
+                                
+                            }
+                        }
+                    }
+
+                }
+            }
             // COLLECT NET SALES AMOUNT
             netMdseSales -= tlog.tlog.totals.netAmount.amount;
             // COLLECT TAXABLE AMOUNT
@@ -191,7 +226,7 @@ function calculateSsbFields(tlogs) {
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    tlTaxableSales -= tax.taxableAmount.amount;
+                    tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
                 }
             }
 
@@ -203,12 +238,12 @@ function calculateSsbFields(tlogs) {
                     {
                         case 23:
                             // Foodstamps
-                            tlFSSales -= t.tenderAmount.amount;
+                            tlFSSales -= Math.round(t.tenderAmount.amount * 100);
                             break;
                         case 28:
                         case 48:
                             // wic
-                            tlWicSales -= t.tenderAmount.amount;
+                            tlWicSales -= Math.round(t.tenderAmount.amount * 100);
                             break;
                     }
                 }
@@ -227,19 +262,22 @@ function calculateSsbFields(tlogs) {
         wholeSaleAmount;
     // Format amounts
     let i = 0;
-    while (i < taxPlanAmount.length) {
+    while (i < taxPlanAmount.length) 
+    {
         taxPlanAmount[i] = tlogUtils.addPaddedZeros(
-            parseInt(taxPlanAmount[i] * 100),
+            parseInt(taxPlanAmount[i]),
             CONSTANTS.PADDED_FIELD_SIZE.TXPLANAMT
         );
         i++;
     }
+
     wholeSaleAmount = tlogUtils.addPaddedZeros(
-        parseInt(wholeSaleAmount * 100),
+        parseInt(wholeSaleAmount),
         CONSTANTS.PADDED_FIELD_SIZE.WHLSLAMT
     );
+
     nonTaxableAmount = tlogUtils.addPaddedZeros(
-        parseInt(nonTaxableAmount * 100),
+        parseInt(nonTaxableAmount),
         CONSTANTS.PADDED_FIELD_SIZE.NONTXBLAMT
     );
 
@@ -345,7 +383,7 @@ async function runSSB(runType, startDate = null, endDate = null) {
 
         // calculate SSB fields for each store
         for (let storeId of Object.keys(logsByStore)) {
-            const totals = calculateSsbFields(logsByStore[storeId]);
+            const totals = calcSsbFields(logsByStore[storeId],storeId);
 
             const ssbOutput = generatessbOutputPerStoreId(
                 totals,
