@@ -161,7 +161,11 @@ function calcSsbFields(tlogs,storeId) {
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
+                    if(tax.amount.amount > 0)
+                    {
+                        tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
+                    }
+                    
                 }
             }
 
@@ -226,7 +230,11 @@ function calcSsbFields(tlogs,storeId) {
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
+                    if(tax.amount.amount > 0)
+                    {
+                        tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
+                    }
+                    
                 }
             }
 
@@ -254,6 +262,7 @@ function calcSsbFields(tlogs,storeId) {
     }
 
     // Calculate nonTaxableAmount
+    // ((@NetMdseSales + @eCom_MdseSales) - @TlTaxableSales - @TlFSSales - @TlWICSales - @TlTaxExempt)
     nonTaxableAmount =
         netMdseSales -
         tlTaxableSales -
