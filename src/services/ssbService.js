@@ -224,7 +224,7 @@ function calcSsbFields(tlogs,storeId) {
                 }
             }
             // COLLECT NET SALES AMOUNT
-            netMdseSales -= tlog.tlog.totals.netAmount.amount;
+            netMdseSales -= Math.round(tlog.tlog.totals.netAmount.amount * 100);
             // COLLECT TAXABLE AMOUNT
             if (tlog.tlog.totalTaxes.length > 0) 
             {
