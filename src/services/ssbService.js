@@ -119,60 +119,65 @@ function calcSsbFields(tlogs,storeId) {
             tlog.tlog.isSuspended !== 'true' &&
             tlog.tlog.isOpen !== 'true'
         ) {
-        // loop through tax object and collect info
-        if(tlog.tlog.transactionType == 'SALES')
-        {
-            // SALE
-            if (tlog.tlog.totalTaxes.length > 0) 
+        // loop through item object and collect info
+        // tlog.items.isReturn and tlog.items.itemTaxes.isRefund will need to be used
+            for (let itm of tlog.tlog.items)
             {
-                for (let tax of tlog.tlog.totalTaxes) 
+                if (itm.itemTaxes.length > 0) 
                 {
-                    const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
-                    const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] += Math.round(tax.taxableAmount.amount * 100);
-                }
-            }
-
-            // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
-            if (typeof tlog.tlog.items !== 'undefined' && tlog.tlog.items.length > 0) 
-            {
-                for (let itm of tlog.tlog.items)
-                {
-                    if(typeof itm.itemTaxes !== 'undefined' && itm.itemTaxes.length > 0)
+                    for (let tax of itm.itemTaxes) 
                     {
-                        for (let itmTax of itm.itemTaxes)
+                        const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
+                        const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
+                        if(tax.isRefund == "true")
                         {
-                            if(typeof itmTax.taxExempt !== 'undefined' && itmTax.isVoided !== true)
+                            taxPlanAmount[taxId] -= Math.round(tax.taxableAmount.amount * 100);
+                        }
+                        else
+                        {
+                            taxPlanAmount[taxId] += Math.round(tax.taxableAmount.amount * 100);
+                        }
+
+                        // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
+                        if(typeof tax.taxExempt !== 'undefined' && tax.isVoided !== true)
+                        {
+                            if( tax.taxExempt.exemptAmount.amount > 0)
                             {
-                                if( itmTax.taxExempt.exemptAmount.amount > 0)
+                                if(tax.isRefund == 'true')
                                 {
-                                    wholeSaleAmount += Math.round(itmTax.taxableAmount.amount * 100);
+                                    wholeSaleAmount -= Math.round(tax.taxableAmount.amount * 100);
                                 }
+                                else
+                                {
+                                    wholeSaleAmount += Math.round(tax.taxableAmount.amount * 100);
+                                }    
                             }
                         }
                     }
-                }
+                }   
             }
-           
-            // COLLECT NET SALES AMOUNT
-            netMdseSales += Math.round(tlog.tlog.totals.netAmount.amount * 100);
-            // COLLECT TAXABLE AMOUNT
-            if (tlog.tlog.totalTaxes.length > 0) 
-            {
-                for (let tax of tlog.tlog.totalTaxes) 
-                {
-                    if(tax.amount.amount > 0)
-                    {
-                        tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
-                    }
-                    
-                }
-            }
+        }
 
-            if (tlog.tlog.tenders.length > 0) 
+        // COLLECT NET SALES AMOUNT
+        netMdseSales += Math.round(tlog.tlog.totals.netAmount.amount * 100);
+        // COLLECT TAXABLE AMOUNT
+        if (tlog.tlog.totalTaxes.length > 0) 
+        {
+            for (let tax of tlog.tlog.totalTaxes) 
             {
-                for (let t of tlog.tlog.tenders)
-                 {
+                if(tax.amount.amount > 0)
+                {
+                    tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
+                }        
+            }
+        }
+
+        if (tlog.tlog.tenders.length > 0 ) 
+        {
+            for (let t of tlog.tlog.tenders)
+            {
+                if(t.usage === 'PAYMENT')
+                {
                     switch (t.id) 
                     {
                         case 23:
@@ -188,79 +193,7 @@ function calcSsbFields(tlogs,storeId) {
                 }
             }
         }
-        else
-        {
-            // RETURN
-            if (tlog.tlog.totalTaxes.length > 0) 
-            {
-                for (let tax of tlog.tlog.totalTaxes) 
-                {
-                    const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
-                    const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                    taxPlanAmount[taxId] -= Math.round(tax.taxableAmount.amount * 100);
-                }
-            }
-
-            // COLLECT WHOLESALE AMOUNT
-            if (typeof tlog.tlog.items !== 'undefined' && tlog.tlog.items.length > 0) 
-            {
-                for (let itm of tlog.tlog.items)
-                {
-                    if(typeof itm.itemTaxes !== 'undefined' && itm.itemTaxes.length > 0)
-                    {
-                        for (let itmTax of itm.itemTaxes)
-                        {
-                            if(typeof itmTax.taxExempt !== 'undefined' && itmTax.isVoided !== true)
-                            {
-                                if( itmTax.taxExempt.exemptAmount.amount > 0)
-                                {
-                                    wholeSaleAmount -= Math.round(itm.itemTaxes.taxableAmount.amount * 100);
-                                }
-                                
-                            }
-                        }
-                    }
-
-                }
-            }
-            // COLLECT NET SALES AMOUNT
-            netMdseSales -= Math.round(tlog.tlog.totals.netAmount.amount * 100);
-            // COLLECT TAXABLE AMOUNT
-            if (tlog.tlog.totalTaxes.length > 0) 
-            {
-                for (let tax of tlog.tlog.totalTaxes) 
-                {
-                    if(tax.amount.amount > 0)
-                    {
-                        tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
-                    }
-                    
-                }
-            }
-
-            if (tlog.tlog.tenders.length > 0) 
-            {
-                for (let t of tlog.tlog.tenders)
-                 {
-                    switch (t.id) 
-                    {
-                        case 23:
-                            // Foodstamps
-                            tlFSSales -= Math.round(t.tenderAmount.amount * 100);
-                            break;
-                        case 28:
-                        case 48:
-                            // wic
-                            tlWicSales -= Math.round(t.tenderAmount.amount * 100);
-                            break;
-                    }
-                }
-            }
-        }
-
-        }
     }
-
     // Calculate nonTaxableAmount
     // ((@NetMdseSales + @eCom_MdseSales) - @TlTaxableSales - @TlFSSales - @TlWICSales - @TlTaxExempt)
     nonTaxableAmount =
