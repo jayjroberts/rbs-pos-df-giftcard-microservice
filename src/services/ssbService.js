@@ -129,7 +129,7 @@ function calcSsbFields(tlogs,storeId) {
                     {
                         const taxIDArray = tax.id.split('-'); // tax plan 1 - 8
                         const taxId = taxIDArray[0] - 1; // array index starts at 0 so need to adjust tax plan to index
-                        if(tax.isRefund == "true")
+                        if(tax.isRefund === true)
                         {
                             taxPlanAmount[taxId] -= Math.round(tax.taxableAmount.amount * 100);
                         }
@@ -145,53 +145,73 @@ function calcSsbFields(tlogs,storeId) {
                             {
                                 if(tax.isRefund == 'true')
                                 {
-                                    wholeSaleAmount -= Math.round(tax.taxableAmount.amount * 100);
+                                    wholeSaleAmount -= Math.round(itm.actualAmount.amount * 100);
                                 }
                                 else
                                 {
-                                    wholeSaleAmount += Math.round(tax.taxableAmount.amount * 100);
+                                    wholeSaleAmount += Math.round(itm.actualAmount.amount * 100);
                                 }    
                             }
                         }
                     }
+
+                     // COLLECT NET SALES AMOUNT
+                     if(itm.isReturn === true)
+                     {
+                        netMdseSales -= Math.round(itm.actualAmount.amount * 100);
+                     }
+                     else
+                     {
+                        netMdseSales += Math.round(itm.actualAmount.amount * 100);
+                     }
+                    
                 }   
             }
-        }
 
-        // COLLECT NET SALES AMOUNT
-        netMdseSales += Math.round(tlog.tlog.totals.netAmount.amount * 100);
-        // COLLECT TAXABLE AMOUNT
-        if (tlog.tlog.totalTaxes.length > 0) 
-        {
-            for (let tax of tlog.tlog.totalTaxes) 
+           
+            // COLLECT TAXABLE AMOUNT
+            if (tlog.tlog.totalTaxes.length > 0) 
             {
-                if(tax.amount.amount > 0)
+                for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
-                }        
-            }
-        }
-
-        if (tlog.tlog.tenders.length > 0 ) 
-        {
-            for (let t of tlog.tlog.tenders)
-            {
-                if(t.usage === 'PAYMENT')
-                {
-                    switch (t.id) 
+                    if(tax.amount.amount > 0)
                     {
-                        case 23:
-                            // Foodstamps
-                            tlFSSales += Math.round(t.tenderAmount.amount * 100);
-                            break;
-                        case 28:
-                        case 48:
-                            // wic
-                            tlWicSales += Math.round(t.tenderAmount.amount * 100);
-                            break;
+                        if(tax.isRefund === true)
+                        {
+                            tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
+                        }
+                        else
+                        {
+                            tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
+                        }
+                        
+                    }        
+                }
+            }
+
+            if (tlog.tlog.tenders.length > 0 ) 
+            {
+                for (let t of tlog.tlog.tenders)
+                {
+                    if(t.usage === 'PAYMENT')
+                    {   
+                        switch (t.id) 
+                        {
+                            case 23:
+                                // Foodstamps
+                                tlFSSales += Math.round(t.tenderAmount.amount * 100);
+                                break;
+                            case 28:
+                            case 48:
+                                // wic
+                                tlWicSales += Math.round(t.tenderAmount.amount * 100);
+                                break;
+                        }
                     }
                 }
             }
+    
+    
         }
     }
     // Calculate nonTaxableAmount
