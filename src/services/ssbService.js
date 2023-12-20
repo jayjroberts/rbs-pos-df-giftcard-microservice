@@ -139,7 +139,7 @@ function calcSsbFields(tlogs,storeId) {
                         }
 
                         // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
-                        if(typeof tax.taxExempt !== 'undefined' && tax.isVoided !== true)
+                        if( tax.taxExempt != null && tax.isVoided !== true)
                         {
                             if( tax.taxExempt.exemptAmount.amount > 0)
                             {
