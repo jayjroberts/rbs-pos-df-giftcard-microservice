@@ -17,7 +17,7 @@ const LOGGER = require('../logger/logger');
 async function findTransactions(query, projection) {
     LOGGER.debug(`Entering into findTransactions()`);
     try {
-        const tlog = await transactionsModel.find(query, projection);
+        const tlog = await transactionsModel.find(query, projection).lean();
         if (tlog) {
             // successfully found matching transactions
             return tlog;

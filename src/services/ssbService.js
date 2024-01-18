@@ -123,7 +123,7 @@ function calcSsbFields(tlogs,storeId) {
         // tlog.items.isReturn and tlog.items.itemTaxes.isRefund will need to be used
             for (let itm of tlog.tlog.items)
             {
-                if (itm.itemTaxes.length > 0) 
+                if (itm.itemTaxes) 
                 {
                     for (let tax of itm.itemTaxes) 
                     {
@@ -170,7 +170,7 @@ function calcSsbFields(tlogs,storeId) {
 
            
             // COLLECT TAXABLE AMOUNT
-            if (tlog.tlog.totalTaxes.length > 0) 
+            if (tlog.tlog.totalTaxes) 
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
@@ -189,7 +189,7 @@ function calcSsbFields(tlogs,storeId) {
                 }
             }
 
-            if (tlog.tlog.tenders.length > 0 ) 
+            if (tlog.tlog.tenders) 
             {
                 for (let t of tlog.tlog.tenders)
                 {
