@@ -156,14 +156,18 @@ function calcSsbFields(tlogs,storeId) {
                     }
 
                      // COLLECT NET SALES AMOUNT
-                     if(itm.isReturn === true)
+                     if(itm.actualAmount)
                      {
-                        netMdseSales -= Math.round(itm.actualAmount.amount * 100);
+                        if(itm.isReturn === true)
+                        {
+                            netMdseSales -= Math.round(itm.actualAmount.amount * 100);
+                        }
+                        else
+                        {
+                            netMdseSales += Math.round(itm.actualAmount.amount * 100);
+                        }
                      }
-                     else
-                     {
-                        netMdseSales += Math.round(itm.actualAmount.amount * 100);
-                     }
+                     
                     
                 }   
             }
