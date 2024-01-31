@@ -124,17 +124,24 @@ function getTaxesPerStoreId(tlogs) {
             const taxId = tax.id;
             const taxName = tax.name;
             // aggregate totalTaxes.amount.amount
-            if (Object.keys(totalTaxes).includes(taxId)) {
-                totalTaxes[taxId].sumOfTax += tax.taxableAmount.amount;
-            } else {
+
+            if (!Object.keys(totalTaxes).includes(taxId)) {
                 // create a new tax entry in totalTaxes object
                 totalTaxes[taxId] = {
                     name: taxName,
-                    sumOfTax: tax.taxableAmount.amount,
+                    sumOfTax: 0,
                     taxCollected: 0,
                     taxDiscounted: 0,
                 };
             }
+
+            let amt = tax.taxableAmount.amount;
+            if(tax.isRefund === true)
+            {
+                amt = amt * -1;
+            }
+            totalTaxes[taxId].sumOfTax += amt;
+
             // aggregate tax collected if there is no tax exempt amount available
             if (!tax.taxExempt) {
                 // iterate through items in tlog object
@@ -143,8 +150,12 @@ function getTaxesPerStoreId(tlogs) {
                     for (let itemTax of item.itemTaxes) {
                         if (itemTax.id === taxId) {
                             // aggregate itemTaxes.amount.amount
+                            let itmAmt = itemTax.amount.amount;
+                            if(itemTax.isRefund === true){
+                                itmAmt = itmAmt * -1;
+                            }
                             totalTaxes[taxId].taxCollected +=
-                                itemTax.amount.amount;
+                                itmAmt;
                         }
                     }
                 }
@@ -178,6 +189,7 @@ async function findStxTLogs(runType, startDate, endDate) {
 
     const projection = {
         id: 1,
+        'transactionNumber':1,
         'tlog.totalTaxes': 1,
         'tlog.items': 1,
         'siteInfo.id': 1,
