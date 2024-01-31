@@ -156,7 +156,7 @@ function calcSsbFields(tlogs,storeId) {
                     }
 
                      // COLLECT NET SALES AMOUNT
-                     if(itm.actualAmount)
+                     if(itm.actualAmount && itm.itemSellType == "SALES")
                      {
                         if(itm.isReturn === true)
                         {
