@@ -266,7 +266,6 @@ async function findSsbTLogs(runType, startDate, endDate) {
     LOGGER.debug(`Entering into findSsbTLogs()`);
     // create query and projection
     const query = {
-        'siteInfo.id':'9919',
         'tlog.transactionType': { $in: ['SALES','RETURN'] },
         'tlog.isVoided': false,
         'tlog.isSuspended': false,
