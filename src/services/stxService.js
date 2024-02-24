@@ -236,15 +236,16 @@ async function findStxTLogs(runType, startDate, endDate) {
     }
 
     // find in collection
-    try {
-        const result = await transactionsDAO
-            .findTransactions(query, projection)
-            .then((result) => result);
-        return result;
-    } catch (error) {
-        LOGGER.error(`Error in findStxLogs() :: ${error}`);
-        throw new Error(error);
-    }
+    return new Promise((resolve, reject) => {
+        transactionsDAO.findTransactions(query, projection)
+            .then(result => {
+                resolve(result);
+            })
+            .catch(err => {
+                LOGGER.error(`Error in findStxTLogs() :: ${err}`);
+                reject(new Error(err));
+            });
+    });
 }
 
 /**
@@ -259,7 +260,9 @@ async function runSTX(runType, startDate = null, endDate = null) {
     try {
         let response = '';
         // find the matching tlogs
-        const tlogs = await findStxTLogs(runType, startDate, endDate);
+        const tlogs = await findStxTLogs(runType, startDate, endDate).then(
+            (tlogs) => tlogs
+        );
 
         // sort by store id
         const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
