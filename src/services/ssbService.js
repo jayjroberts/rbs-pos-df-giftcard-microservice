@@ -329,6 +329,7 @@ async function findSsbTLogs(runType, startDate, endDate) {
     });
  
     return result;
+    
 }
 
 /**
