@@ -236,16 +236,15 @@ async function findStxTLogs(runType, startDate, endDate) {
     }
 
     // find in collection
-    return new Promise((resolve, reject) => {
-        transactionsDAO.findTransactions(query, projection)
-            .then(result => {
-                resolve(result);
-            })
-            .catch(err => {
-                LOGGER.error(`Error in findStxTLogs() :: ${err}`);
-                reject(new Error(err));
-            });
+    const result = await transactionsDAO
+    .findTransactions(query, projection)
+    .then((result) => result)
+    .catch((err) => {
+        LOGGER.error(`Error in findStxTLogs() :: ${err}`);
+        reject(new Error(err));
     });
+ 
+    return result;
 }
 
 /**
