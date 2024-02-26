@@ -320,15 +320,16 @@ async function findSsbTLogs(runType, startDate, endDate) {
     }
 
     // find in collection
-    try {
-        const result = await transactionsDAO
-            .findTransactions(query, projection)
-            .then((result) => result);
-        return result;
-    } catch (err) {
-        LOGGER.error(`Error in findSsbTLogs() :: ${err}`);
-        throw new Error(err);
-    }
+    return new Promise((resolve, reject) => {
+        transactionsDAO.findTransactions(query, projection)
+            .then(result => {
+                resolve(result);
+            })
+            .catch(err => {
+                LOGGER.error(`Error in findSsbTLogs() :: ${err}`);
+                reject(new Error(err));
+            });
+    });
 }
 
 /**
@@ -343,7 +344,9 @@ async function runSSB(runType, startDate = null, endDate = null) {
     // get the transactions from mongoDB
     let responseObj = '';
     try {
-        const tlogs = await findSsbTLogs(runType, startDate, endDate);
+        const tlogs = await findSsbTLogs(runType, startDate, endDate).then(
+            (tlogs) => tlogs
+        );
         // sort tlogs by store id
         const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
 

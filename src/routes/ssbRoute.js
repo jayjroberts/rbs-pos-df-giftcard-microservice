@@ -23,9 +23,9 @@ router.post('/ssb', queryValidator, async (req, res) => {
         } else {
             let response;
             if (req.query.run === CONSTANTS.PARAMS.DAILY) {
-                response = await ssbService.runSSB(CONSTANTS.PARAMS.DAILY);
+                response = await ssbService.runSSB(CONSTANTS.PARAMS.DAILY).then((response) => response);
             } else if (req.query.run === CONSTANTS.PARAMS.WEEKLY) {
-                response = await ssbService.runSSB(CONSTANTS.PARAMS.WEEKLY);
+                response = await ssbService.runSSB(CONSTANTS.PARAMS.WEEKLY).then((response) => response);
             } else {
                 // run adhoc record
                 const startDate = req.body.startDate;
@@ -34,7 +34,7 @@ router.post('/ssb', queryValidator, async (req, res) => {
                     CONSTANTS.PARAMS.ADHOC,
                     startDate,
                     endDate
-                );
+                ).then((response) => response);
             }
             res.send(response);
         }

@@ -39,10 +39,10 @@ router.post('/stx', queryValidator, async (req, res) => {
             let response;
             if (req.query.run === CONSTANTS.PARAMS.DAILY) {
                 // run daily record
-                response = await stxService.runSTX(CONSTANTS.PARAMS.DAILY);
+                response = await stxService.runSTX(CONSTANTS.PARAMS.DAILY).then((response) => response);
             } else if (req.query.run === CONSTANTS.PARAMS.WEEKLY) {
                 // run weekly record
-                response = await stxService.runSTX(CONSTANTS.PARAMS.WEEKLY);
+                response = await stxService.runSTX(CONSTANTS.PARAMS.WEEKLY).then((response) => response);
             } else {
                 // run adhoc record
                 const startDate = req.body.startDate;
@@ -51,7 +51,7 @@ router.post('/stx', queryValidator, async (req, res) => {
                     CONSTANTS.PARAMS.ADHOC,
                     startDate,
                     endDate
-                );
+                ).then((response) => response);
             }
             res.send(response);
         }
