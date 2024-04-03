@@ -19,6 +19,12 @@ const CONSTANTS = require('../constants/constants');
 
 // services
 const stxService = require('../services/stxService');
+/**
+* GET endpoint to validate that the server is up and running
+*/
+router.get('/', (_, res) => {
+    res.send('OK');
+});
 
 /**
  * POST route for STX record creation
