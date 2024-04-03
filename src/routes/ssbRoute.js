@@ -11,6 +11,13 @@ const LOGGER = require('../logger/logger');
 const CONSTANTS = require('../constants/constants');
 const ssbService = require('../services/ssbService');
 
+/**
+* GET endpoint to validate that the server is up and running
+*/
+router.get('/', (_, res) => {
+    res.send('OK');
+});
+
 router.post('/ssb', queryValidator, async (req, res) => {
     // check that the request is valid
     LOGGER.info('Entering into POST /ssb');

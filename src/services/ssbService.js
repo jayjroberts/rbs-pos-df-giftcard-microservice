@@ -325,7 +325,7 @@ async function findSsbTLogs(runType, startDate, endDate) {
     .then((result) => result)
     .catch((err) => {
         LOGGER.error(`Error in findSsbTLogs() :: ${err}`);
-        reject(new Error(err));
+        throw new Error(err);
     });
  
     return result;
