@@ -3,7 +3,17 @@
  * @author Jason Roberts
  * @version 1.0.0
  */
-
+const jsDateToISOLocalStr = (d) => {
+    let retVal = null;
+    const parsedInput = (typeof d === "string" || d instanceof String) && d.length < 11 ? `${d} ` : d;
+    const utcDate = d ? new Date(parsedInput) : new Date();
+    if (String(utcDate).toLowerCase() !== "invalid date") {
+        const localTimestamp = utcDate.getTime() - utcDate.getTimezoneOffset() * 60 * 1000;
+        const localDate = new Date(localTimestamp);
+        retVal = localDate.toISOString().slice(0, -1);
+    }
+    return retVal;
+};
 // DAO
 const transactionsDAO = require('../dao/transactionsDAO');
 
@@ -254,6 +264,28 @@ function calcSsbFields(tlogs,storeId) {
     };
     return returnObj;
 }
+// gets yesterday with correct date format (used by daily and weekly requests)
+function getYesterday() {
+    var date = new Date();
+    var yesterday = date - 1000 * 60 * 60 * 24 * 1;   // current date's milliseconds - 1,000 ms * 60 s * 60 mins * 24 hrs * (# of days beyond one to go back)
+    yesterday = new Date(yesterday);
+    yesterday.setHours(0, 0, 0, 0);
+    return yesterday;
+}
+// gets first day of the week for a weekly request with correct date format (weekly requests)
+function getFirstDayOfWeek() {
+    var date = new Date();
+    var firstDay = date - 1000 * 60 * 60 * 24 * 8;   // current date's milliseconds - 1,000 ms * 60 s * 60 mins * 24 hrs * (# of days beyond one to go back)
+    firstDay = new Date(firstDay);
+    firstDay.setHours(0, 0, 0, 0);
+    return firstDay;
+}
+// gets last day of the week for a weekly request with correct date format (weekly requests)
+function getYesterdayEndOfDay(){
+    var yesterday = getYesterday();
+    yesterday.setHours(23, 59, 59);
+    return yesterday;
+}
 
 /**
  * finds the tlogs that match the criteria for ssb
@@ -282,28 +314,19 @@ async function findSsbTLogs(runType, startDate, endDate) {
     // add different date ranges depending on the run type
     if (runType === CONSTANTS.PARAMS.DAILY) {
         // create the daily run query
-        let start = new Date();
-        start.setUTCHours(0, 0, 0);
-        start.setDate(start.getDate() - 1); // turn date into yesterday
-
+        let start = jsDateToISOLocalStr(getYesterday());
         // add to query
-        query['businessDay.dateTime'] = start.toISOString().split('.')[0] + 'Z';
+        query['businessDay.dateTime'] = start.split("T")[0]+'T00:00:00Z';
     }
     if (runType === CONSTANTS.PARAMS.WEEKLY) {
-        // query must be any date from the previous sunday to saturday
-        let start = new Date();
-        // get previous sunday date
-        start.setUTCHours(0, 0, 0);
-        start.setDate(start.getDate() - 7);
-
-        let end = new Date();
-        // get saturday date
-        end.setUTCHours(23, 59, 59);
-        end.setDate(end.getDate() - 1);
+    
+        // transactions must be any date from the previous sunday to saturday
+        let start = jsDateToISOLocalStr(getFirstDayOfWeek())
+        let end = jsDateToISOLocalStr(getYesterdayEndOfDay());
         // add to query
         query['businessDay.dateTime'] = {
-            $gte: start.toISOString().split('.')[0] + 'Z',
-            $lte: end.toISOString().split('.')[0] + 'Z',
+            $gte: start.split("T")[0]+'T00:00:00Z',
+            $lte: end.split("T")[0]+'T00:00:00Z',
         };
     }
     if (runType === CONSTANTS.PARAMS.ADHOC) {
