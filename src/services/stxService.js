@@ -180,7 +180,7 @@ async function findStxTLogs(runType, startDate, endDate) {
     LOGGER.debug(`Entering into findStxTLogs()`);
     // set query and projection
     const query = {
-        'tlog.transactionType': 'SALES',
+        'tlog.transactionType': { $in: ['SALES','RETURN'] },
         'tlog.isVoided': false,
         'tlog.isSuspended': false,
         'tlog.isRecalled': false,
