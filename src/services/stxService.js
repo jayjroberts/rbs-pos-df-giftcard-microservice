@@ -121,11 +121,14 @@ function getTaxesPerStoreId(tlogs) {
         // iterate through total taxes
         for (let tax of tlog.tlog.totalTaxes) {
             // get the tax id and name
+            if(!(tax.id.includes("-"))){
+                continue;   // going to next tax and disregarding this one
+            }
             const taxId = tax.id;
             const taxName = tax.name;
             // aggregate totalTaxes.amount.amount
 
-            if (!Object.keys(totalTaxes).includes(taxId)) {
+            if (!(taxId in totalTaxes)) {
                 // create a new tax entry in totalTaxes object
                 totalTaxes[taxId] = {
                     name: taxName,
