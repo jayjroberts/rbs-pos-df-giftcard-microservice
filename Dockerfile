@@ -1,7 +1,7 @@
 FROM node:18.17-alpine3.18
 
 # configure timezone
-ENV TZ=America/New_York
+ENV TZ="America/New_York"
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create app directory
@@ -23,6 +23,12 @@ COPY . /usr/src/app/rbs-pos-df-taxes_microservices
 
 # Mapping to 8080 public port
 EXPOSE 8080
+COPY --from=datadog/serverless-init:1-alpine /datadog-init /usr/src/app/datadog-init
+COPY --from=datadog/dd-lib-js-init /operator-build/node_modules /dd_tracer/node/
+ENV DD_SERVICE="rbs-pos-df-07taxes-ms"
+ENV DD_VERSION=$BUILD_ID
+ 
+ENTRYPOINT ["/usr/src/app/datadog-init"]
 
 # Run as non root user
 USER node
