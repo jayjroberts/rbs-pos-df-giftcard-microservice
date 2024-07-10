@@ -3,7 +3,7 @@
 trigger:
   branches:
     include:
-    - develop
+    - release
   paths:
     include: # Trigger includes changes made to code.
       - "*"
