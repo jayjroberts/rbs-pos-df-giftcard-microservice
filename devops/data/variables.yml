@@ -1,10 +1,10 @@
 variables:
   ### Build Vars
   containerRegistry: acrnextgenposnonprde201        #Name of ACR where you push your build image
-  dockerFilePath: "./Dockerfile"                     #Path to Dockerfile
+  dockerFilePath: "./Dockerfile"                    #Path to Dockerfile
   imageName: wapp-07:BE-0                           #Name of image to be published
-  keyVaultName: kvnxtgenposnpnoeu01                 #Name to your Azure Keyvault
-  loginServer: acrnextgenposnonprde201.azurecr.io    #Domain name of ACR
+  keyVaultName: kvnonprddeve201                     #Name to your Azure Keyvault
+  loginServer: acrnextgenposnonprde201.azurecr.io   #Domain name of ACR
   resourceGroupName: rg-nextgenpos-nonprd-e2-01          #Name of your Azure Resource Group where your ACR is located
   serviceConnection: sub-adusatech-nonprd-rbs-nextgenpos            #Azure DevOps Service Connection Name that connect to your Azure resources(Azure keyVault)
   subscriptionID: d111918d-2bcc-4840-a463-b0ad850b9a09 #Value of your Subscription-Id to access your ACR
