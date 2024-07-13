@@ -74,8 +74,7 @@ resources:
 variables:
 - template: ..\data\variables.yml
 
-pool:
-  vmImage: 'Ubuntu-latest'
+pool: 'nextgenpos-ubuntu-2004-agentpool'
 
 stages:
 # The setup stage prepares the pipeline for future tasks. Keyvault vars are imported, pipeline vars are updated, and directories are listed as the parameters allow.
@@ -84,8 +83,7 @@ stages:
     jobs:
       - job: PreBuild
         displayName: PreBuild
-        pool:
-          vmImage: ubuntu-latest
+        pool: 'nextgenpos-ubuntu-2004-agentpool'
         steps:
           - task: PowerShell@2
             condition: and(succeeded(), ${{parameters.ListDirectories}})
@@ -99,8 +97,7 @@ stages:
   - stage: DevStage
     dependsOn: PreBuild
     displayName: Dev Build
-    pool:
-      vmImage: ubuntu-latest
+    pool: 'nextgenpos-ubuntu-2004-agentpool'
     jobs:
       - template: /devops/pipelines/jobs.build-test-publish.yml
         parameters:
