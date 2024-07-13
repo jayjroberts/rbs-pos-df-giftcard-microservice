@@ -3,7 +3,7 @@ variables:
   containerRegistry: acrnextgenposnonprde201        #Name of ACR where you push your build image
   dockerFilePath: "./Dockerfile"                    #Path to Dockerfile
   imageName: wapp-07:BE-0                           #Name of image to be published
-  keyVaultName: kvnonprddeve201                     #Name to your Azure Keyvault
+  keyVaultName: kvprde201                           #Name to your Azure Keyvault
   loginServer: acrnextgenposnonprde201.azurecr.io   #Domain name of ACR
   resourceGroupName: rg-nextgenpos-nonprd-e2-01          #Name of your Azure Resource Group where your ACR is located
   serviceConnection: sub-adusatech-nonprd-rbs-nextgenpos            #Azure DevOps Service Connection Name that connect to your Azure resources(Azure keyVault)
