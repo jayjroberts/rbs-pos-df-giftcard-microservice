@@ -38,9 +38,7 @@ jobs:
 # The code quality testing job runs sonarqube analysis and publishes the results to the pipeline. Results can also be viewed in the sonarqube dashboard under the given project name.
   - job: CodeQualityTesting
     displayName: Code Quality Testing
-    pool:
-      # vmImage: ubuntu-latest
-      name: private-ubuntu-2004-enablement-adusatech-prd  # must use self hosted agent if using PDL Sonarqube
+    pool: 'nextgenpos-ubuntu-2004-agentpool'  # must use self hosted agent if using PDL Sonarqube
     steps:
       - checkout: rbs-devops-shared-sonarqube-testing
       - checkout: self
@@ -91,8 +89,7 @@ jobs:
       - SecurityAnalysis
     displayName: Build and Push Images to ACR
     condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
-    pool:
-      vmImage: ubuntu-latest
+    pool: 'nextgenpos-ubuntu-2004-agentpool'
     steps:
 
       - task: AzureKeyVault@2
