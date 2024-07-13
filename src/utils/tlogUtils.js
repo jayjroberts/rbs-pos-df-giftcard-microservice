@@ -4,8 +4,6 @@
  * @date May 2023
  */
 
-// Logger
-const LOGGER = require('../logger/logger');
 
 // constants
 const CONSTANTS = require('../constants/constants');
