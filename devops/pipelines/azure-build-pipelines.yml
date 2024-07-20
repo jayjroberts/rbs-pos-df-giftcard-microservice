@@ -1,9 +1,8 @@
 # author:  Valeria Molina Recinos
-
 trigger:
   branches:
     include:
-    - release
+    - none
   paths:
     include: # Trigger includes changes made to code.
       - "*"
@@ -11,7 +10,9 @@ trigger:
     exclude: # Trigger excludes changes made to the pipeline.
       - "devops"
 pr:
-  - none
+   branches:
+    include:
+    - release
 
 parameters: # Parameters show up in the azure devops gui. These can be modified for manual runs but will use the default values when triggered by changes to the repo.
 
@@ -83,7 +84,6 @@ stages:
     jobs:
       - job: PreBuild
         displayName: PreBuild
-        pool: 'nextgenpos-ubuntu-2004-agentpool'
         steps:
           - task: PowerShell@2
             condition: and(succeeded(), ${{parameters.ListDirectories}})
@@ -97,7 +97,6 @@ stages:
   - stage: DevStage
     dependsOn: PreBuild
     displayName: Dev Build
-    pool: 'nextgenpos-ubuntu-2004-agentpool'
     jobs:
       - template: /devops/pipelines/jobs.build-test-publish.yml
         parameters:
