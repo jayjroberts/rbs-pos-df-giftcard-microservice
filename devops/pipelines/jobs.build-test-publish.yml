@@ -65,8 +65,7 @@ jobs:
 # The security analysis job downloads the build artifact and performs security scanning using HCL App Scan and publishes results to the pipeline. Results can also be viewed in the HCL dashboard under the given scan name.
   - job: SecurityAnalysis
     displayName: Security Analysis
-    pool:
-      vmImage: ubuntu-latest
+    pool:'nextgenpos-ubuntu-2004-agentpool'
     steps:
       - checkout: self
 
@@ -88,8 +87,8 @@ jobs:
       - CodeQualityTesting
       - SecurityAnalysis
     displayName: Build and Push Images to ACR
-    condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
-    pool: 'nextgenpos-ubuntu-2004-agentpool'
+    #condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
+    pool:'nextgenpos-ubuntu-2004-agentpool'
     steps:
 
       - task: AzureKeyVault@2
