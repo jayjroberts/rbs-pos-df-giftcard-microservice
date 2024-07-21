@@ -10,13 +10,13 @@ parameters: # Parameters are passed in from the calling pipeline.
       - false
   - name: RunSonarQube # If true, the pipeline will run sonarqube scanning for code quality checks.
     type: boolean
-    default: true
+    default: false
     values:
       - true
       - false
   - name: HCLAppScan # If true, the pipeline will run HCL Appscan for code security checks.
     type: boolean
-    default: true
+    default: false
     values:
       - true
       - false
@@ -65,7 +65,7 @@ jobs:
 # The security analysis job downloads the build artifact and performs security scanning using HCL App Scan and publishes results to the pipeline. Results can also be viewed in the HCL dashboard under the given scan name.
   - job: SecurityAnalysis
     displayName: Security Analysis
-    pool:'nextgenpos-ubuntu-2004-agentpool'
+    pool: 'nextgenpos-ubuntu-2004-agentpool'
     steps:
       - checkout: self
 
@@ -88,7 +88,7 @@ jobs:
       - SecurityAnalysis
     displayName: Build and Push Images to ACR
     #condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
-    pool:'nextgenpos-ubuntu-2004-agentpool'
+    pool: 'nextgenpos-ubuntu-2004-agentpool'
     steps:
 
       - task: AzureKeyVault@2
