@@ -30,7 +30,24 @@ async function findTransactions(query, projection) {
         throw new Error(error);
     }
 }
+/**
+ * Perform aggregation on transaction data.
+ * @param {Array} pipeline - The MongoDB aggregation pipeline
+ * @returns {Promise<Array>} - The result of the aggregation
+ */
+async function aggregateTransactions(pipeline) {
+    LOGGER.debug(`Entering into aggregateTransactions()`);
+    try {
+        const result = await transactionsModel.aggregate(pipeline);
+        LOGGER.debug('Aggregation result:', result);
+        return result;
+    } catch (err) {
+        LOGGER.error(`Error in aggregateTransactions() :: ${err}`);
+        throw new Error(err);
+    }
+}
 
 module.exports = {
     findTransactions,
+    aggregateTransactions
 };

@@ -3,15 +3,10 @@
 trigger:
   branches:
     include:
-    - release
-  paths:
-    include: # Trigger includes changes made to code.
-      - "*"
-
+      - release
     exclude: # Trigger excludes changes made to the pipeline.
       - "devops"
-pr:
-  - none
+
 
 parameters: # Parameters show up in the azure devops gui. These can be modified for manual runs but will use the default values when triggered by changes to the repo.
 
@@ -35,13 +30,13 @@ parameters: # Parameters show up in the azure devops gui. These can be modified 
       - false
   - name: RunSonarQube # If true, the pipeline will run sonarqube scanning for code quality checks.
     type: boolean
-    default: true
+    default: false
     values:
       - true
       - false
   - name: HCLAppScan # If true, the pipeline will run HCL Appscan for code security checks.
     type: boolean
-    default: true
+    default: false
     values:
       - true
       - false
@@ -74,8 +69,7 @@ resources:
 variables:
 - template: ..\data\variables.yml
 
-pool:
-  vmImage: 'Ubuntu-latest'
+pool: 'nextgenpos-ubuntu-2004-agentpool'
 
 stages:
 # The setup stage prepares the pipeline for future tasks. Keyvault vars are imported, pipeline vars are updated, and directories are listed as the parameters allow.
@@ -84,8 +78,6 @@ stages:
     jobs:
       - job: PreBuild
         displayName: PreBuild
-        pool:
-          vmImage: ubuntu-latest
         steps:
           - task: PowerShell@2
             condition: and(succeeded(), ${{parameters.ListDirectories}})
@@ -99,8 +91,6 @@ stages:
   - stage: DevStage
     dependsOn: PreBuild
     displayName: Dev Build
-    pool:
-      vmImage: ubuntu-latest
     jobs:
       - template: /devops/pipelines/jobs.build-test-publish.yml
         parameters:

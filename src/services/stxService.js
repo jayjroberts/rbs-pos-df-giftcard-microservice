@@ -18,36 +18,6 @@ const tlogUtils = require('../utils/tlogUtils');
 const fileUpload = require('../utils/fileUpload');
 const fileCreate = require('../utils/fileCreate');
 
-/**
- * Generate the output string on a tax line for a store
- * @param {Object} totals the tax amounts
- * @param {string} taxId the tax id
- * @returns {string} a string representation of the total tax amounts
- */
-function generateOutputPerTaxId(totals, taxId) {
-    // get the tax plan number
-    const id = '0' + taxId.slice(0, 1);
-
-    // sum of tax
-    const sumOfTaxAmountString = tlogUtils.createTotalAmountString(
-        totals.sumOfTax,
-        false
-    );
-
-    // tax collected
-    const taxCollectedAmountString = tlogUtils.createTotalAmountString(
-        totals.taxCollected,
-        false
-    );
-
-    // tax discounted
-    const taxDiscountedAmountString = tlogUtils.createTotalAmountString(
-        totals.taxDiscounted,
-        false
-    );
-    // return as a string
-    return `${id}${sumOfTaxAmountString}${taxCollectedAmountString}${taxDiscountedAmountString}`;
-}
 
 /**
  * Generate STX output for a given store
@@ -56,7 +26,7 @@ function generateOutputPerTaxId(totals, taxId) {
  * @param {string} endDate optional, only for adhoc run
  * @returns {string} string representation of the STX output
  */
-function generateSTXOutputPerStoreId(totals, storeId, endDate = null) {
+function generateSTXOutputPerStoreId(totals, endDate = null) {
     let str = '';
     // the date will vary depending on the type of run
     let dt;
@@ -68,186 +38,29 @@ function generateSTXOutputPerStoreId(totals, storeId, endDate = null) {
     }
     const date = ('0' + dt.getUTCDate()).slice(-2);
     const month = ('0' + (dt.getUTCMonth() + 1)).slice(-2);
-    let currKey = 0;
-    const numKeys = Object.keys(totals).length - 1;
-    for (let taxId of Object.keys(totals)) {
-        // get the record line for the current taxId
-        const firstPartLine = generateOutputPerTaxId(totals[taxId], taxId);
+   
+    totals.forEach( function(entry){
+        //Format record as follows
+        // tax plan number, taxable sales, tax collected, tax discounted, filler, desc, date, store rec
+        let storeId = tlogUtils.formatString(entry['store'],4,0);
+        if(entry['taxIdentifier'].includes("-"))
+        {    
+            let taxArray = entry['taxIdentifier'].split("-")
+            let taxId = tlogUtils.formatString(taxArray[0],2,0);
+            let taxSales = tlogUtils.formatString(Math.round(entry['taxableSales']*100),11,1);
+            let taxAmount = tlogUtils.formatString(Math.round(entry['taxAmount']*100),11,1);
+            let taxDiscount = tlogUtils.formatString(Math.round(entry['taxDiscount']*100),11,1);
 
-        // get the end descriptor of the line
-        let desc = totals[taxId].name.trim();
-
-        // left align the descriptor
-        if (desc.length > CONSTANTS.DESC_LENGTH) {
-            // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
-            // then we need to truncate the descriptor
-            desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
-        }
-        const descriptionPadding = tlogUtils.descriptionAlignment(desc);
-
-        // create the end of the line string
-        const secondPartLine = `${desc}${descriptionPadding}${dt.getFullYear()}${month}${date}${storeId}${
-            CONSTANTS.RECORD_TYPE.STX
-        }`;
-
-        // calculate filler space
-        const padding = tlogUtils.generatePadding(
-            firstPartLine,
-            secondPartLine
-        );
-
-        // create line
-        const line = `${firstPartLine}${padding}${secondPartLine}`;
-
-        // append to str
-        str += line;
-        if (currKey !== numKeys) {
-            str += '\n';
-        }
-        currKey++;
-    }
-    return str;
-}
-
-/**
- * Calculate the tax totals for STX record
- * @param {Array} tlogs an array containing all tlogs for this store
- * @returns {Object} an object containing the tax totals for STX record
- */
-function getTaxesPerStoreId(tlogs) {
-    let totalTaxes = {};
-
-    for (let tlog of tlogs) {
-        // iterate through total taxes
-        for (let tax of tlog.tlog.totalTaxes) {
-            // get the tax id and name
-            if(!(tax.id.includes("-"))){
-                continue;   // going to next tax and disregarding this one
+            let str1 = `${taxId}${taxSales}${taxAmount}${taxDiscount}`;
+            let str2 = `${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
+            // calculate filler space
+            let padding = tlogUtils.generatePadding(str1,str2);
+            str += `${str1}${padding}${str2}` + "\n";
             }
-            const taxId = tax.id;
-            const taxName = tax.name;
-            // aggregate totalTaxes.amount.amount
-
-            if (!(taxId in totalTaxes)) {
-                // create a new tax entry in totalTaxes object
-                totalTaxes[taxId] = {
-                    name: taxName,
-                    sumOfTax: 0,
-                    taxCollected: 0,
-                    taxDiscounted: 0,
-                };
-            }
-
-            let amt = tax.taxableAmount.amount;
-            if(tax.isRefund === true)
-            {
-                amt = amt * -1;
-            }
-            totalTaxes[taxId].sumOfTax += amt;
-
-            // aggregate tax collected if there is no tax exempt amount available
-            if (!tax.taxExempt) {
-                // iterate through items in tlog object
-                for (let item of tlog.tlog.items) {
-                    // iterate through itemTaxes
-                    for (let itemTax of item.itemTaxes) {
-                        if (itemTax.id === taxId) {
-                            // aggregate itemTaxes.amount.amount
-                            let itmAmt = itemTax.amount.amount;
-                            if(itemTax.isRefund === true){
-                                itmAmt = itmAmt * -1;
-                            }
-                            totalTaxes[taxId].taxCollected +=
-                                itmAmt;
-                        }
-                    }
-                }
-            } else {
-                // aggregate taxExempt.exemptAmount.amount
-                totalTaxes[taxId].taxDiscounted +=
-                    tax.taxExempt.exemptAmount.amount;
-            }
-        }
-    }
-    return totalTaxes;
-}
-
-/**
- * Find all the tlogs that match the given criteria
- * @param {string} runType 'daily', 'weekly', 'adhoc'
- * @param {string} startDate only used when runType is 'adhoc'
- * @param {string} endDate only used when runType is 'adhoc'
- * @returns {Array} an array containing all matching documents
- */
-async function findStxTLogs(runType, startDate, endDate) {
-    LOGGER.debug(`Entering into findStxTLogs()`);
-    // set query and projection
-    const query = {
-        'tlog.transactionType': { $in: ['SALES','RETURN'] },
-        'tlog.isVoided': false,
-        'tlog.isSuspended': false,
-        'tlog.isRecalled': false,
-        isTrainingMode: false,
-    };
-
-    const projection = {
-        id: 1,
-        'transactionNumber':1,
-        'tlog.totalTaxes': 1,
-        'tlog.items': 1,
-        'siteInfo.id': 1,
-    };
-
-    // add different date ranges depending on the run type
-    if (runType === CONSTANTS.PARAMS.DAILY) {
-        // create the daily run query
-        let start = new Date();
-        start.setUTCHours(0, 0, 0);
-        start.setDate(start.getDate() - 1); // turn date into yesterday
-
-        // add to query
-        query['businessDay.dateTime'] = start.toISOString().split('.')[0] + 'Z';
-    }
-    if (runType === CONSTANTS.PARAMS.WEEKLY) {
-        // query must be any date from the previous sunday to saturday
-        let start = new Date();
-        // get previous sunday date
-        start.setUTCHours(0, 0, 0);
-        start.setDate(start.getDate() - 7);
-
-        let end = new Date();
-        // get saturday date
-        end.setUTCHours(23, 59, 59);
-        end.setDate(end.getDate() - 1);
-        // add to query
-        query['businessDay.dateTime'] = {
-            $gte: start.toISOString().split('.')[0] + 'Z',
-            $lte: end.toISOString().split('.')[0] + 'Z',
-        };
-    }
-    if (runType === CONSTANTS.PARAMS.ADHOC) {
-        // set a custom time range to look for transactions
-        let start = new Date(startDate);
-        start.setUTCHours(0, 0, 0, 0);
-        let end = new Date(endDate);
-        end.setUTCHours(0, 0, 0, 0);
-
-        query['businessDay.dateTime'] = {
-            $gte: start.toISOString().split('.')[0] + 'Z',
-            $lte: end.toISOString().split('.')[0] + 'Z',
-        };
-    }
-
-    // find in collection
-    const result = await transactionsDAO
-    .findTransactions(query, projection)
-    .then((result) => result)
-    .catch((err) => {
-        LOGGER.error(`Error in findStxTLogs() :: ${err}`);
-        throw new Error(err);
+  
     });
- 
-    return result;
+    
+    return str;
 }
 
 /**
@@ -262,32 +75,15 @@ async function runSTX(runType, startDate = null, endDate = null) {
     try {
         let response = '';
         // find the matching tlogs
-        const tlogs = await findStxTLogs(runType, startDate, endDate).then(
-            (tlogs) => tlogs
-        );
-
-        // sort by store id
-        const logsByStore = tlogUtils.extractLogsByStoreId(tlogs);
-
-        const numKeys = Object.keys(logsByStore).length - 1;
-        let currKey = 0;
-        // iterate through each collection of tlogs by store id
-        for (let storeId of Object.keys(logsByStore)) {
-            const totals = getTaxesPerStoreId(logsByStore[storeId]);
+        const aggregation = await runAggregation(runType, startDate, endDate);
             // generate output
             const storeOutput = generateSTXOutputPerStoreId(
-                totals,
-                storeId,
+                aggregation,
                 endDate
             );
             // add it to the response
             response += storeOutput;
-            // add a new line between store outputs
-            if (currKey !== numKeys && storeOutput !== '') {
-                response += '\n';
-            }
-            currKey++;
-        }
+            
         // upload the extract to Azure as a blob
         const fileName = fileCreate.nameTmpFile(
             runType,
@@ -303,6 +99,155 @@ async function runSTX(runType, startDate = null, endDate = null) {
     }
 }
 
+/**
+ * Find the tlogs that matchda record type
+ * @param {string} runType daily, weekly, or adhoc (custom run)
+ * @param {string} startDate start date for custom run
+ * @param {string} endDate end date for custom run
+ * @returns {Array} an array of tlogs
+ */
+
+// new aggregation operator implementation
+async function runAggregation(runType, startDate = null, endDate = null){
+    try {
+         // Initialize the base match criteria. Exclusions should be done at this 1st stage
+         let baseMatch = {
+            'transactionCategory': "SALE_OR_RETURN",
+            'tlog.isVoided': false,
+            'tlog.isSuspended': false,
+            isTrainingMode: false,
+        };
+        
+        // Add date criteria based on the run type
+        if (runType === CONSTANTS.PARAMS.DAILY) {
+            let start = new Date();
+            start.setUTCHours(0, 0, 0);
+            start.setDate(start.getDate() - 1);
+            baseMatch['businessDay.dateTime'] = start.toISOString().split('.')[0] + 'Z';
+        } else if (runType === CONSTANTS.PARAMS.WEEKLY) {
+            // query must be any date from the previous sunday to saturday
+            let start = new Date();
+            start.setUTCHours(0, 0, 0);
+            start.setDate(start.getDate() - 7);
+
+            let end = new Date();
+            end.setUTCHours(23, 59, 59);
+            end.setDate(end.getDate() - 1);
+
+            baseMatch['businessDay.dateTime'] = {
+                $gte: start.toISOString().split('.')[0] + 'Z',
+                $lte: end.toISOString().split('.')[0] + 'Z',
+            };
+
+        } else if (runType === CONSTANTS.PARAMS.ADHOC) {
+            let start = new Date(startDate);
+            start.setUTCHours(0, 0, 0, 0);
+
+            let end = new Date(endDate);
+            end.setUTCHours(0, 0, 0, 0);
+
+            baseMatch['businessDay.dateTime'] = {
+                $gte: start.toISOString().split('.')[0] + 'Z',
+                $lte: end.toISOString().split('.')[0] + 'Z'
+            };
+        }
+            
+            const result = await transactionsDAO.aggregateTransactions([
+                {
+                  '$match': baseMatch
+                }, {
+                  '$unwind': {
+                    'path': '$tlog.totalTaxes'
+                  }
+                }, {
+                  '$match': {
+                    'tlog.totalTaxes.isVoided': false
+                  }
+                }, {
+                  '$addFields': {
+                    'taxId': '$tlog.totalTaxes.id', 
+                    'taxAmount': {
+                      '$cond': [
+                        {
+                          '$eq': [
+                            '$tlog.totalTaxes.isRefund', true
+                          ]
+                        }, {
+                          '$multiply': [
+                            '$tlog.totalTaxes.amount.amount', -1
+                          ]
+                        }, '$tlog.totalTaxes.amount.amount'
+                      ]
+                    }, 
+                    'taxDiscAmount': {
+                      '$cond': [
+                        {
+                          '$eq': [
+                            '$tlog.totalTaxes.isRefund', true
+                          ]
+                        }, {
+                          '$multiply': [
+                            '$tlog.totalTaxes.taxExempt.amount', -1
+                          ]
+                        }, '$tlog.totalTaxes.taxExempt.amount'
+                      ]
+                    }, 
+                    'taxableSales': {
+                      '$cond': [
+                        {
+                          '$eq': [
+                            '$tlog.totalTaxes.isRefund', true
+                          ]
+                        }, {
+                          '$multiply': [
+                            '$tlog.totalTaxes.taxableAmount.amount', -1
+                          ]
+                        }, '$tlog.totalTaxes.taxableAmount.amount'
+                      ]
+                    }
+                  }
+                }, {
+                  '$group': {
+                    '_id': {
+                      '$concat': [
+                        '$siteInfo.id', '_', '$taxId'
+                      ]
+                    }, 
+                    'store': {
+                      '$first': '$siteInfo.id'
+                    }, 
+                    'taxIdentifier': {
+                      '$first': '$taxId'
+                    }, 
+                    'taxableSales': {
+                      '$sum': '$taxableSales'
+                    }, 
+                    'taxAmount': {
+                      '$sum': '$taxAmount'
+                    }, 
+                    'taxDiscount': {
+                      '$sum': '$taxDiscAmount'
+                    }, 
+                    'debugData': {
+                      '$push': {
+                        '$concat': [
+                          '$transactionNumber', ',', '$taxId', ',', {
+                            '$toString': '$taxableSales'
+                          }, ',', {
+                            '$toString': '$taxAmount'
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]);
+        return result;
+        
+    }catch (err) {
+        console.error("Error running aggregation:", err);
+    }
+}
 module.exports = {
     runSTX,
 };
