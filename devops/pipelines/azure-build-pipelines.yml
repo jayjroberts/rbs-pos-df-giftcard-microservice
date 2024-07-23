@@ -1,18 +1,12 @@
 # author:  Valeria Molina Recinos
+
 trigger:
   branches:
     include:
-    - none
-  paths:
-    include: # Trigger includes changes made to code.
-      - "*"
-
+      - release
     exclude: # Trigger excludes changes made to the pipeline.
       - "devops"
-pr:
-   branches:
-    include:
-    - release
+
 
 parameters: # Parameters show up in the azure devops gui. These can be modified for manual runs but will use the default values when triggered by changes to the repo.
 
