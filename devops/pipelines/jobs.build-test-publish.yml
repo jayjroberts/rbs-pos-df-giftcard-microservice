@@ -38,7 +38,7 @@ jobs:
 # The code quality testing job runs sonarqube analysis and publishes the results to the pipeline. Results can also be viewed in the sonarqube dashboard under the given project name.
   - job: CodeQualityTesting
     displayName: Code Quality Testing
-    pool: 'nextgenpos-ubuntu-2004-agentpool'  # must use self hosted agent if using PDL Sonarqube
+    # pool: 'nextgenpos-ubuntu-2004-agentpool'  # must use self hosted agent if using PDL Sonarqube
     steps:
       - checkout: rbs-devops-shared-sonarqube-testing
       - checkout: self
@@ -65,7 +65,7 @@ jobs:
 # The security analysis job downloads the build artifact and performs security scanning using HCL App Scan and publishes results to the pipeline. Results can also be viewed in the HCL dashboard under the given scan name.
   - job: SecurityAnalysis
     displayName: Security Analysis
-    pool: 'nextgenpos-ubuntu-2004-agentpool'
+    # pool: 'nextgenpos-ubuntu-2004-agentpool'
     steps:
       - checkout: self
 
@@ -88,7 +88,7 @@ jobs:
       - SecurityAnalysis
     displayName: Build and Push Images to ACR
     #condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
-    pool: 'nextgenpos-ubuntu-2004-agentpool'
+    # pool: 'nextgenpos-ubuntu-2004-agentpool'
     steps:
 
       - task: AzureKeyVault@2
