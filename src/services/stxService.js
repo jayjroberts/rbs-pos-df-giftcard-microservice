@@ -38,7 +38,7 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
     }
     const date = ('0' + dt.getUTCDate()).slice(-2);
     const month = ('0' + (dt.getUTCMonth() + 1)).slice(-2);
-   
+  
     totals.forEach( function(entry){
         //Format record as follows
         // tax plan number, taxable sales, tax collected, tax discounted, filler, desc, date, store rec
@@ -50,9 +50,16 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
             let taxSales = tlogUtils.formatString(Math.round(entry['taxableSales']*100),11,1);
             let taxAmount = tlogUtils.formatString(Math.round(entry['taxAmount']*100),11,1);
             let taxDiscount = tlogUtils.formatString(Math.round(entry['taxDiscount']*100),11,1);
-
+            let desc = entry['taxName'].trim();
+            if (desc.length > CONSTANTS.DESC_LENGTH) {
+                // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
+                // then we need to truncate the descriptor
+                desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
+            }
+           
+            const descriptionPadding = tlogUtils.descriptionAlignment(desc);
             let str1 = `${taxId}${taxSales}${taxAmount}${taxDiscount}`;
-            let str2 = `${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
+            let str2 = `${desc}${descriptionPadding}${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
             // calculate filler space
             let padding = tlogUtils.generatePadding(str1,str2);
             str += `${str1}${padding}${str2}` + "\n";
@@ -76,7 +83,7 @@ async function runSTX(runType, startDate = null, endDate = null) {
         let response = '';
         // find the matching tlogs
         const aggregation = await runAggregation(runType, startDate, endDate);
-            // generate output
+                    // generate output
             const storeOutput = generateSTXOutputPerStoreId(
                 aggregation,
                 endDate
@@ -204,7 +211,10 @@ async function runAggregation(runType, startDate = null, endDate = null){
                           ]
                         }, '$tlog.totalTaxes.taxableAmount.amount'
                       ]
-                    }
+                    },
+                    'taxName':'$tlog.totalTaxes.name'
+                      
+                    
                   }
                 }, {
                   '$group': {
@@ -219,6 +229,9 @@ async function runAggregation(runType, startDate = null, endDate = null){
                     'taxIdentifier': {
                       '$first': '$taxId'
                     }, 
+                    'taxName': {
+                        '$first': '$tlog.totalTaxes.name'
+                    },
                     'taxableSales': {
                       '$sum': '$taxableSales'
                     }, 
