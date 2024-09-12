@@ -38,7 +38,7 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
     }
     const date = ('0' + dt.getUTCDate()).slice(-2);
     const month = ('0' + (dt.getUTCMonth() + 1)).slice(-2);
-   
+  
     totals.forEach( function(entry){
         //Format record as follows
         // tax plan number, taxable sales, tax collected, tax discounted, filler, desc, date, store rec
@@ -50,10 +50,19 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
             let taxSales = tlogUtils.formatString(Math.round(entry['taxableSales']*100),11,1);
             let taxAmount = tlogUtils.formatString(Math.round(entry['taxAmount']*100),11,1);
             let taxDiscount = tlogUtils.formatString(Math.round(entry['taxDiscount']*100),11,1);
-
+            let desc = entry['taxName'].trim();
+            if (desc.length > CONSTANTS.DESC_LENGTH) {
+                // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
+                // then we need to truncate the descriptor
+                desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
+            }
+           
+            const descriptionPadding = tlogUtils.descriptionAlignment(desc);
             let str1 = `${taxId}${taxSales}${taxAmount}${taxDiscount}`;
+
             let desc = entry['desc'] + tlogUtils.descriptionAlignment(entry['desc']);
             let str2 = `${desc}${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
+
             // calculate filler space
             let padding = tlogUtils.generatePadding(str1,str2);
             str += `${str1}${padding}${str2}` + "\n";
@@ -77,7 +86,7 @@ async function runSTX(runType, startDate = null, endDate = null) {
         let response = '';
         // find the matching tlogs
         const aggregation = await runAggregation(runType, startDate, endDate);
-            // generate output
+                    // generate output
             const storeOutput = generateSTXOutputPerStoreId(
                 aggregation,
                 endDate
@@ -216,6 +225,39 @@ async function runAggregation(runType, startDate = null, endDate = null){
                     ]
                   }, 
                   'store': {
+                    '$first': '$siteInfo.id'
+                  }, 
+                  'taxIdentifier': {
+                    '$first': '$taxId'
+                  }, 
+                  'desc': {
+                    '$first': '$tlog.totalTaxes.name'
+                  }, 
+                  'taxableSales': {
+                    '$sum': '$taxableSales'
+                  }, 
+                  'taxAmount': {
+                    '$sum': '$taxAmount'
+                  }, 
+                  'taxDiscount': {
+                    '$sum': '$taxDiscAmount'
+                  }, 
+                  'taxExempt': {
+                    '$sum': '$taxExempt'
+                  }, 
+                  'debugData': {
+                    '$push': {
+
+                      '$concat': [
+                        '$transactionNumber', ',', '$taxId', ',', {
+                          '$toString': '$taxableSales'
+                        }, ',', {
+                          '$toString': '$taxAmount'
+                        }
+                      ]
+
+                    }, 
+                    'store': {
                     '$first': '$siteInfo.id'
                   }, 
                   'taxIdentifier': {

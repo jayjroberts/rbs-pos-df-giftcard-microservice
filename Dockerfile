@@ -25,8 +25,10 @@ COPY . /usr/src/app/rbs-pos-df-taxes_microservices
 EXPOSE 8080
 COPY --from=datadog/serverless-init:1-alpine /datadog-init /usr/src/app/datadog-init
 COPY --from=datadog/dd-lib-js-init /operator-build/node_modules /dd_tracer/node/
-ENV DD_SERVICE="rbs-pos-df-07taxes-ms"
 ENV DD_VERSION=$BUILD_ID
+ENV DD_TRACE_ENABLED="true"
+ENV DD_LOGS_ENABLED="true"
+ENV DD_LOGS_INJECTION="true"
  
 ENTRYPOINT ["/usr/src/app/datadog-init"]
 
