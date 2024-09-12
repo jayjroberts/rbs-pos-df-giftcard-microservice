@@ -197,7 +197,7 @@ function calcSsbFields(tlogs,storeId) {
             {
                 for (let t of tlog.tlog.tenders)
                 {
-                    if(t.usage === 'PAYMENT')
+                    if(t.usage === 'PAYMENT' && !(typeof(t.isRefused) !== 'undefined' && t.isRefused))
                     {   
                         switch (t.id) 
                         {
