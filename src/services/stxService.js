@@ -50,7 +50,7 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
             let taxSales = tlogUtils.formatString(Math.round(entry['taxableSales']*100),11,1);
             let taxAmount = tlogUtils.formatString(Math.round(entry['taxAmount']*100),11,1);
             let taxDiscount = tlogUtils.formatString(Math.round(entry['taxDiscount']*100),11,1);
-            let desc = entry['taxName'].trim();
+            let desc = entry['taxName'] ? entry['taxName'].trim() : '';
             if (desc.length > CONSTANTS.DESC_LENGTH) {
                 // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
                 // then we need to truncate the descriptor
@@ -60,7 +60,7 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
             const descriptionPadding = tlogUtils.descriptionAlignment(desc);
             let str1 = `${taxId}${taxSales}${taxAmount}${taxDiscount}`;
 
-            let desc = entry['desc'] + tlogUtils.descriptionAlignment(entry['desc']);
+            desc = entry['desc'] + tlogUtils.descriptionAlignment(entry['desc']);
             let str2 = `${desc}${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
 
             // calculate filler space
@@ -162,158 +162,93 @@ async function runAggregation(runType, startDate = null, endDate = null){
             };
         }
             
-            const result = await transactionsDAO.aggregateTransactions([
-              {
-                '$match': baseMatch
-              }, {
-                '$unwind': {
-                  'path': '$tlog.totalTaxes'
-                }
-              }, {
-                '$match': {
-                  'tlog.totalTaxes.isVoided': false
-                }
-              }, {
-                '$addFields': {
-                  'taxId': '$tlog.totalTaxes.id', 
-                  'taxAmount': {
-                    '$cond': [
-                      {
-                        '$eq': [
-                          '$tlog.totalTaxes.isRefund', true
-                        ]
-                      }, {
-                        '$multiply': [
-                          '$tlog.totalTaxes.amount.amount', -1
-                        ]
-                      }, '$tlog.totalTaxes.amount.amount'
-                    ]
-                  }, 
-                  'taxDiscAmount': {
-                    '$cond': [
-                      {
-                        '$eq': [
-                          '$tlog.totalTaxes.isRefund', true
-                        ]
-                      }, {
-                        '$multiply': [
-                          '$tlog.totalTaxes.taxExempt.amount', -1
-                        ]
-                      }, '$tlog.totalTaxes.taxExempt.amount'
-                    ]
-                  }, 
-                  'taxableSales': {
-                    '$cond': [
-                      {
-                        '$eq': [
-                          '$tlog.totalTaxes.isRefund', true
-                        ]
-                      }, {
-                        '$multiply': [
-                          '$tlog.totalTaxes.taxableAmount.amount', -1
-                        ]
-                      }, '$tlog.totalTaxes.taxableAmount.amount'
-                    ]
-                  }, 
-                  'taxExempt': '$tlog.totalTaxes.taxExempt.exemptTaxableAmount.amount'
-                }
-              }, {
-                '$group': {
-                  '_id': {
-                    '$concat': [
-                      '$siteInfo.id', '_', '$taxId'
-                    ]
-                  }, 
-                  'store': {
-                    '$first': '$siteInfo.id'
-                  }, 
-                  'taxIdentifier': {
-                    '$first': '$taxId'
-                  }, 
-                  'desc': {
-                    '$first': '$tlog.totalTaxes.name'
-                  }, 
-                  'taxableSales': {
-                    '$sum': '$taxableSales'
-                  }, 
-                  'taxAmount': {
-                    '$sum': '$taxAmount'
-                  }, 
-                  'taxDiscount': {
-                    '$sum': '$taxDiscAmount'
-                  }, 
-                  'taxExempt': {
-                    '$sum': '$taxExempt'
-                  }, 
-                  'debugData': {
-                    '$push': {
-
-                      '$concat': [
-                        '$transactionNumber', ',', '$taxId', ',', {
-                          '$toString': '$taxableSales'
-                        }, ',', {
-                          '$toString': '$taxAmount'
-                        }
-                      ]
-
-                    }, 
-                    'store': {
-                    '$first': '$siteInfo.id'
-                  }, 
-                  'taxIdentifier': {
-                    '$first': '$taxId'
-                  }, 
-                  'desc': {
-                    '$first': '$tlog.totalTaxes.name'
-                  }, 
-                  'taxableSales': {
-                    '$sum': '$taxableSales'
-                  }, 
-                  'taxAmount': {
-                    '$sum': '$taxAmount'
-                  }, 
-                  'taxDiscount': {
-                    '$sum': '$taxDiscAmount'
-                  }, 
-                  'taxExempt': {
-                    '$sum': '$taxExempt'
-                  }, 
-                  'debugData': {
-                    '$push': {
-                      '$concat': [
-                        '$transactionNumber', ',', '$taxId', ',', {
-                          '$toString': '$taxableSales'
-                        }, ',', {
-                          '$toString': '$taxAmount'
-                        }
-                      ]
-                    }
-                  }
-                }
-              }, {
-                '$addFields': {
-                  'taxableSales': {
-                    '$subtract': [
-                      '$taxableSales', '$taxExempt'
-                    ]
-                  }
-                }
-              }, {
-                '$sort': {
-                  'store': 1, 
-                  'taxId': 1
-                }
-              }, {
-                '$project': {
-                  'store': 1, 
-                  'taxIdentifier': 1, 
-                  'desc': 1, 
-                  'taxableSales': 1, 
-                  'taxAmount': 1,
-                  'taxDiscount':1
+        const result = await transactionsDAO.aggregateTransactions([
+          {
+            '$match': baseMatch
+          },
+          {
+            '$unwind': {
+              'path': '$tlog.totalTaxes'
+            }
+          },
+          {
+            '$match': {
+              'tlog.totalTaxes.isVoided': false
+            }
+          },
+          {
+            '$addFields': {
+              'taxId': '$tlog.totalTaxes.id',
+              'taxAmount': {
+                '$cond': [
+                  { '$eq': ['$tlog.totalTaxes.isRefund', true] },
+                  { '$multiply': ['$tlog.totalTaxes.amount.amount', -1] },
+                  '$tlog.totalTaxes.amount.amount'
+                ]
+              },
+              'taxDiscAmount': {
+                '$cond': [
+                  { '$eq': ['$tlog.totalTaxes.isRefund', true] },
+                  { '$multiply': ['$tlog.totalTaxes.taxExempt.amount', -1] },
+                  '$tlog.totalTaxes.taxExempt.amount'
+                ]
+              },
+              'taxableSales': {
+                '$cond': [
+                  { '$eq': ['$tlog.totalTaxes.isRefund', true] },
+                  { '$multiply': ['$tlog.totalTaxes.taxableAmount.amount', -1] },
+                  '$tlog.totalTaxes.taxableAmount.amount'
+                ]
+              },
+              'taxExempt': '$tlog.totalTaxes.taxExempt.exemptTaxableAmount.amount'
+            }
+          },
+          {
+            '$group': {
+              '_id': { '$concat': ['$siteInfo.id', '_', '$taxId'] },
+              'store': { '$first': '$siteInfo.id' },
+              'taxIdentifier': { '$first': '$taxId' },
+              'desc': { '$first': '$tlog.totalTaxes.name' },
+              'taxableSales': { '$sum': '$taxableSales' },
+              'taxAmount': { '$sum': '$taxAmount' },
+              'taxDiscount': { '$sum': '$taxDiscAmount' },
+              'taxExempt': { '$sum': '$taxExempt' },
+              'debugData': {
+                '$push': {
+                  '$concat': [
+                    '$transactionNumber', ',', '$taxId', ',',
+                    { '$toString': '$taxableSales' }, ',',
+                    { '$toString': '$taxAmount' }
+                  ]
                 }
               }
-            ]);
+            }
+          },
+          {
+            '$addFields': {
+              'taxableSales': {
+                '$subtract': ['$taxableSales', '$taxExempt']
+              }
+            }
+          },
+          {
+            '$sort': {
+              'store': 1,
+              'taxId': 1
+            }
+          },
+          {
+            '$project': {
+              'store': 1,
+              'taxIdentifier': 1,
+              'desc': 1,
+              'taxableSales': 1,
+              'taxAmount': 1,
+              'taxDiscount': 1
+            }
+          }
+        ]);
+        
         return result;
         
     }catch (err) {
