@@ -96,7 +96,7 @@ function generatessbOutputPerStoreId(totals, storeId, endDate = null) {
  * @param {Array} tlogs an array containing tlogs
  * @returns {object} an object containing the totals
  */
-function calcSsbFields(tlogs,storeId) {
+function calcSsbFields(tlogs) {
     let taxPlanAmount = new Array(8);
     let wholeSaleAmount = 0;
     let nonTaxableAmount = 0;
@@ -104,6 +104,7 @@ function calcSsbFields(tlogs,storeId) {
     let tlTaxableSales = 0;
     let tlFSSales = 0;
     let tlWicSales = 0;
+    let txExemptAmount = 0;
     // nonTaxableAmount = netMdseSales - tlTaxableSales - tlFSSales - tlWicSales - wholeSaleAmount
 
     // set each tax plan amount to 0
@@ -132,10 +133,18 @@ function calcSsbFields(tlogs,storeId) {
                         if(tax.isRefund === true)
                         {
                             taxPlanAmount[taxId] -= Math.round(tax.taxableAmount.amount * 100);
+                            if(typeof(tax.taxExempt) !== 'undefined')
+                            {
+                            taxPlanAmount[taxId] += Math.round(tax.taxExempt.exemptTaxableAmount.amount * 100);
+                            }
                         }
                         else
                         {
                             taxPlanAmount[taxId] += Math.round(tax.taxableAmount.amount * 100);
+                            if(typeof(tax.taxExempt) !== 'undefined')
+                                {
+                                taxPlanAmount[taxId] -= Math.round(tax.taxExempt.exemptTaxableAmount.amount * 100);
+                                }
                         }
 
                         // COLLECT WHOLESALE AMOUNT (net amount if taxexempt amount > 0)
@@ -178,18 +187,14 @@ function calcSsbFields(tlogs,storeId) {
             {
                 for (let tax of tlog.tlog.totalTaxes) 
                 {
-                    if(tax.amount.amount > 0)
+                    if(tax.isRefund === true)
                     {
-                        if(tax.isRefund === true)
-                        {
-                            tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
-                        }
-                        else
-                        {
-                            tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
-                        }
-                        
-                    }        
+                        tlTaxableSales -= Math.round(tax.taxableAmount.amount * 100);
+                    }
+                    else
+                    {
+                        tlTaxableSales += Math.round(tax.taxableAmount.amount * 100);
+                    }    
                 }
             }
 
@@ -274,7 +279,11 @@ async function findSsbTLogs(runType, startDate, endDate) {
 
     const projection = {
         'siteInfo.id': 1,
-        'tlog': 1,
+        'tlog.isOpen': 1,
+        'tlog.isSuspended':1,
+        'tlog.isVoided':1,
+        'tlog.items':1,
+        'tlog.totalTaxes':1,
         'transactionNumber':1,
     };
 

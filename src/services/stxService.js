@@ -50,17 +50,15 @@ function generateSTXOutputPerStoreId(totals, endDate = null) {
             let taxSales = tlogUtils.formatString(Math.round(entry['taxableSales']*100),11,1);
             let taxAmount = tlogUtils.formatString(Math.round(entry['taxAmount']*100),11,1);
             let taxDiscount = tlogUtils.formatString(Math.round(entry['taxDiscount']*100),11,1);
-            let desc = entry['taxName'] ? entry['taxName'].trim() : '';
-            if (desc.length > CONSTANTS.DESC_LENGTH) {
-                // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
-                // then we need to truncate the descriptor
-                desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
-            }
            
-            const descriptionPadding = tlogUtils.descriptionAlignment(desc);
             let str1 = `${taxId}${taxSales}${taxAmount}${taxDiscount}`;
 
-            desc = entry['desc'] + tlogUtils.descriptionAlignment(entry['desc']);
+            let desc = entry['desc'] + tlogUtils.descriptionAlignment(entry['desc']);
+            if (desc.length > CONSTANTS.DESC_LENGTH) {
+              // if descriptor length exceeds CONSTANTS.DESC_LENGTH,
+              // then we need to truncate the descriptor
+              desc = desc.substring(0, CONSTANTS.DESC_LENGTH);
+          }
             let str2 = `${desc}${dt.getFullYear()}${month}${date}${storeId}${CONSTANTS.RECORD_TYPE.STX}`;
 
             // calculate filler space
