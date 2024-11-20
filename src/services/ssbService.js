@@ -269,7 +269,6 @@ async function findSsbTLogs(runType, startDate, endDate) {
         'tlog.transactionType': { $in: ['SALES','RETURN'] },
         'tlog.isVoided': false,
         'tlog.isSuspended': false,
-        'tlog.isRecalled': false,
         isTrainingMode: false,
     };
 

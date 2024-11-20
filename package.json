@@ -27,6 +27,7 @@
         "moment-timezone": "^0.5.43",
         "mongoose": "^7.3.0",
         "path": "^0.12.7",
+        "rbs-pos-df-taxes-microservices": "file:",
         "winston": "^3.9.0"
     },
     "devDependencies": {
