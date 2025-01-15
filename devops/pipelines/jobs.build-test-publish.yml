@@ -1,0 +1,121 @@
+parameters: # Parameters are passed in from the calling pipeline.
+  - name: environment # environment this build is running for. Ex) "dev", "qa", "uat"
+    type: string
+    default: ''
+  - name: UseAzureKeyVault # If true, the pipeline will import secrets from the azure keyvault specified in the variables.
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+  - name: RunSonarQube # If true, the pipeline will run sonarqube scanning for code quality checks.
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+  - name: HCLAppScan # If true, the pipeline will run HCL Appscan for code security checks.
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+  - name: BuildImg # If true, the pipeline will build the docker image.
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+  - name: PushImg # If true, the pipeline will push the docker image to the specified ACR.
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+
+jobs:
+
+# The code quality testing job runs sonarqube analysis and publishes the results to the pipeline. Results can also be viewed in the sonarqube dashboard under the given project name.
+  - job: CodeQualityTesting
+    displayName: Code Quality Testing
+    # pool: 'nextgenpos-ubuntu-2004-agentpool'  # must use self hosted agent if using PDL Sonarqube
+    steps:
+      - checkout: rbs-devops-shared-sonarqube-testing
+      - checkout: self
+
+      - task: AzureKeyVault@2
+        condition: ${{parameters.UseAzureKeyVault}}
+        inputs:
+          azureSubscription: $(serviceConnection)
+          KeyVaultName: '$(keyVaultName)'
+          SecretsFilter: '$(secretsFilter)'
+          RunAsPreJob: true
+
+      - ${{ if eq(parameters.RunSonarQube, true) }}:
+        - template: pipelines/steps.sonarqube-codequality-general.yml@rbs-devops-shared-sonarqube-testing
+          parameters:
+            sonarQubeConnection: $(sonarQubeConnection)
+            cliProjectKey: $(cliProjectKey)
+            cliProjectName: $(cliProjectName)
+            cliSources: $(cliSources)
+            SonarQubeQGCheck: $(SonarQubeQGCheck)
+            SonarToken: $(sonarToken)
+            SonarServerName: '$(SonarServerName)'
+
+# The security analysis job downloads the build artifact and performs security scanning using HCL App Scan and publishes results to the pipeline. Results can also be viewed in the HCL dashboard under the given scan name.
+  - job: SecurityAnalysis
+    displayName: Security Analysis
+    # pool: 'nextgenpos-ubuntu-2004-agentpool'
+    steps:
+      - checkout: self
+
+      - ${{ if eq(parameters.HCLAppScan, true) }}:
+        - template: pipelines/steps.hclappscan-sast-general.yml@rbs-devops-shared-hclappscan-testing
+          parameters:
+            applications: '$(dashboardID)'
+            scanname: '$(scanName)'
+            scanloc: '$(scanLoc)'
+            scanSpeedOptions: '$(scanSpeedOptions)'
+            buildfailconditionHigh: '$(hclHighSeverity)'
+            downloadArtifact: False
+            artifactName: ''
+            artifactPath: ''
+
+# The publish artifact job builds the Docker file, pushes the resulting image to the specified ACR, replaces the tokens in the manifest templates with the proper images and tags, and publishes the manifest files
+  - job: PublishArtifact
+    dependsOn:
+      - CodeQualityTesting
+      - SecurityAnalysis
+    displayName: Build and Push Images to ACR
+
+    condition: and(succeeded(), contains(variables['build.sourceBranch'], 'refs/heads/release'))
+
+    steps:
+
+      - task: AzureKeyVault@2
+        condition: ${{parameters.UseAzureKeyVault}}
+        inputs:
+          azureSubscription: $(serviceConnection)
+          keyVaultName: $(keyVaultName)
+          RunAsPreJob: true
+
+      - task: Docker@0
+        condition: and(succeeded(), ${{parameters.BuildImg}})
+        displayName: 'Build an image'
+        inputs:
+          containerregistrytype: 'Azure Container Registry'
+          azureSubscription: '$(serviceConnection)'
+          azureContainerRegistry: '{"loginServer":"$(loginServer)", "id" : "/subscriptions/$(subscriptionID)/resourceGroups/$(resourceGroupName)/providers/Microsoft.ContainerRegistry/registries/$(containerRegistry)"}'
+          dockerFile: '$(dockerFilePath)'
+          imageName: '$(imageName).$(Build.BuildId)'
+          includeLatestTag: flase
+
+      - task: Docker@0
+        condition: and(succeeded(), ${{parameters.PushImg}})
+        displayName: 'Push an image'
+        inputs:
+          azureSubscription: $(serviceConnection)
+          azureContainerRegistry: '{"loginServer":"$(loginServer)", "id" : "/subscriptions/$(subscriptionID)/resourceGroups/$(resourceGroupName)/providers/Microsoft.ContainerRegistry/registries/$(containerRegistry)"}'
+          action: 'Push an image'
+          imageName: '$(imageName).$(Build.BuildId)'
+          includeLatestTag: flase

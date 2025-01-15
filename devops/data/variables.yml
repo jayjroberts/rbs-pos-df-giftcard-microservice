@@ -1,0 +1,26 @@
+variables:
+  ### Build Vars
+  containerRegistry: acrnextgenposnonprde201        #Name of ACR where you push your build image
+  dockerFilePath: "./Dockerfile"                     #Path to Dockerfile
+  imageName: wapp-09:BE-0                           #Name of image to be published
+  keyVaultName: kvnonprddeve201                 #Name to your Azure Keyvault
+  loginServer: acrnextgenposnonprde201.azurecr.io    #Domain name of ACR
+  resourceGroupName: rg-nextgenpos-nonprd-e2-01          #Name of your Azure Resource Group where your ACR is located
+  serviceConnection: sub-adusatech-nonprd-rbs-nextgenpos            #Azure DevOps Service Connection Name that connect to your Azure resources(Azure keyVault)
+  subscriptionID: d111918d-2bcc-4840-a463-b0ad850b9a09 #Value of your Subscription-Id to access your ACR
+
+  ### Sonarqube Vars
+  cliProjectKey: rbs_pos_df_sub_dept_microservices    #Key ID obtained from Sonarqube
+  cliProjectName: rbs_pos_df_sub_dept_microservices   #Project Name obtained from Sonarqube (What is your project named within Sonarqube?)
+  cliSources: "rbs-pos-df-sub_dept-microservices/"     #This is the folder that contains all the code, with the name of the repo being the root folder
+  secretsFilter: sonarToken                             #Secret name containing the sonar token in azure keyvault
+  sonarQubeConnection: pdl-sonarqube-connection    #Azure DevOps Service Connection to your SonarQube instance
+  SonarQubeQGCheck: rbs-devops-shared-sonarqube-testing/scripts/SonarQubeQGCheck.ps1  #Path to your SonarQubeQGcheck script
+  SonarServerName: sonarqube.service.common.peapod.com   #URL of your SonarQube instance
+
+  ### HCL Appscan Vars
+  dashboardID: b452f7f7-231d-48a6-a918-6e5d6727bd84   #ID found in your application within HCL
+  hclHighSeverity: 100                                #Threshold limit for high severities
+  scanLoc: ./                                         #Files to scan for HCL
+  scanName: rbs-pos-df-sub_dept-microservices      #ScanName of application HCL
+  scanSpeedOptions: simple                            #Scan Option in HCL

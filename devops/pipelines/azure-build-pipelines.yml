@@ -1,0 +1,97 @@
+# author:  Joy Davidson
+trigger:
+  branches:
+    include:
+      - release
+    exclude: # Trigger excludes changes made to the pipeline.
+      - "devops"
+      
+parameters: # Parameters show up in the azure devops gui. These can be modified for manual runs but will use the default values when triggered by changes to the repo.
+  - name: TriggerRelease
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+  - name: UseAzureKeyVault
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+  - name: ListDirectories
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+  - name: RunSonarQube
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+  - name: HCLAppScan
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+  - name: BuildImg
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+  - name: PushImg
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+resources:
+  repositories:
+    - repository: rbs-devops-shared-hclappscan-testing
+      type: github
+      endpoint: rbs-nextgenpos
+      name: RoyalAholdDelhaize/rbs-devops-shared-hclappscan-testing
+      ref: refs/tags/1.0.1
+    - repository: rbs-devops-shared-sonarqube-testing
+      type: github
+      endpoint: rbs-nextgenpos
+      name: RoyalAholdDelhaize/rbs-devops-shared-sonarqube-testing
+      ref: refs/tags/1.0.5
+
+pool: 'nextgenpos-ubuntu-2004-agentpool'
+
+variables:
+- template: ..\data\variables.yml
+
+stages:
+  - stage: PreBuild
+    displayName: SetUp
+    jobs:
+      - job: PreBuild
+        displayName: PreBuild
+        steps:
+          - task: PowerShell@2
+            condition: and(succeeded(), ${{parameters.ListDirectories}})
+            displayName: List Directories
+            inputs:
+              targetType: 'inline'
+              script: |
+                Get-ChildItem -Recurse .
+      
+  - stage: DevStage
+    dependsOn: PreBuild
+
+    displayName: Dev Build
+    jobs:
+      - template: /devops/pipelines/jobs.build-test-publish.yml
+        parameters:
+          environment: dev
+          UseAzureKeyVault: ${{parameters.UseAzureKeyVault}}
+          RunSonarQube: ${{parameters.RunSonarQube}}
+          HCLAppScan: ${{parameters.HCLAppScan}}
+          BuildImg: ${{parameters.BuildImg}}
+          PushImg: ${{parameters.PushImg}}
